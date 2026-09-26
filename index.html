@@ -65,7 +65,7 @@ footer{color:var(--mu);font-size:12px;margin:14px 0 6px;line-height:1.7}
 <div id="list"><div class="empty">載入中…</div></div>
 <footer>每格：態別符號｜RSI｜週期。底色愈深＝RSI愈極端（固定區與動態區平均）。左側色條＝已確認；右上黃點＝該週期態別較上次掃描改變；點擊列可看完整說明。<br>週期涵蓋 1D／4H／1H／15M／5M 共5個。「已確認」＝量能達標（量≥近200根量能70分位）＋同態別已持續≥3根，兩者同時成立才算，未確認時反轉/背離不顯示、分數打對折。<br>「綜合判讀」＝各週期最近N根（1D:12／4H:15／1H:18／15M:20／5M:24）的態別分數、RSI、動態分區、量能確認率加權後產出，與指標儀表板一致。<br>▲▼建倉 △▽平倉 ↑↓反轉 ◆◇背離。CVD 使用幣安主動買量計算（非近似）。OI 優先採幣安 USDT 本位持倉量；單一交易所若暫時取不到，改以 CVD 方向近似替代並標示[C]（不再退化為4態，對齊指標「OI失效時仍以CVD估算維持8態」的設計）。資料為推定分類，非交易建議。<br>展開列後方可切換週期查看K線圖，K棒顏色＝該根態別（價漲組綠系／價跌組紅系，組內飽和度依態別可信度排序），越鮮豔代表該根量能已達標，越混濁代表未達標；顏色深淺同時受RSI偏離中軸幅度影響。</footer>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/[email protected]/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';document.head.appendChild(s)"></script>
 <script>
 const B='https://fapi.binance.com',$=s=>document.querySelector(s);
 // [標籤, RSI長度, WMA平滑期, 綜合判讀取樣根數N]；量能改採全域自適應分位數，各週期共用同一門檻
