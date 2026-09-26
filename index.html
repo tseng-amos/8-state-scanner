@@ -228,20 +228,24 @@ function chartBlock(sym){return`<div class="cwrap" data-sym="${sym}"><div class=
 let charts=new Map();
 function paintChart(sym,tfIdx){
  const r=rows.get(sym);if(!r||!r.t)return;
- const el=document.getElementById('ck_'+sym);if(!el||typeof LightweightCharts=='undefined')return;
+ const el=document.getElementById('ck_'+sym);if(!el)return;
+ if(typeof LightweightCharts=='undefined'){el.textContent='圖表函式庫載入失敗（請檢查網路連線）';return}
  let inst=charts.get(sym);
  if(tfIdx==null)tfIdx=inst?inst.tfIdx:1;
- const cd=r.t[tfIdx]&&r.t[tfIdx].cd;if(!cd||!cd.length)return;
- if(inst&&inst.chartEl===el){
-  inst.tfIdx=tfIdx;inst.series.setData(cd);inst.chart.timeScale().fitContent();
- }else{
-  el.innerHTML='';
-  const tx=getComputedStyle(document.body).color;
-  const chart=LightweightCharts.createChart(el,{width:el.clientWidth||300,height:220,layout:{background:{color:'transparent'},textColor:tx},grid:{vertLines:{color:'rgba(139,149,163,.15)'},horzLines:{color:'rgba(139,149,163,.15)'}},timeScale:{timeVisible:true,secondsVisible:false,borderVisible:false},rightPriceScale:{borderVisible:false}});
-  const series=chart.addCandlestickSeries({borderVisible:false,wickVisible:true,upColor:'#2ebd85',downColor:'#f6465d',wickUpColor:'#2ebd85',wickDownColor:'#f6465d'});
-  series.setData(cd);chart.timeScale().fitContent();
-  charts.set(sym,{chart,series,tfIdx,chartEl:el});
- }
+ const cd=r.t[tfIdx]&&r.t[tfIdx].cd;
+ if(!cd||!cd.length){el.textContent='暫無K線資料';return}
+ try{
+  if(inst&&inst.chartEl===el){
+   inst.tfIdx=tfIdx;inst.series.setData(cd);inst.chart.timeScale().fitContent();
+  }else{
+   el.innerHTML='';el.textContent='';
+   const tx=getComputedStyle(document.body).color;
+   const chart=LightweightCharts.createChart(el,{width:el.clientWidth||300,height:220,layout:{background:{color:'transparent'},textColor:tx},grid:{vertLines:{color:'rgba(139,149,163,.15)'},horzLines:{color:'rgba(139,149,163,.15)'}},timeScale:{timeVisible:true,secondsVisible:false,borderVisible:false},rightPriceScale:{borderVisible:false}});
+   const series=chart.addCandlestickSeries({borderVisible:false,wickVisible:true,upColor:'#2ebd85',downColor:'#f6465d',wickUpColor:'#2ebd85',wickDownColor:'#f6465d'});
+   series.setData(cd);chart.timeScale().fitContent();
+   charts.set(sym,{chart,series,tfIdx,chartEl:el});
+  }
+ }catch(e){el.textContent='圖表繪製錯誤：'+e.message}
 }
 function render(){
  let a=[...rows.values()].filter(r=>r.t&&pass[S.flt](r));
