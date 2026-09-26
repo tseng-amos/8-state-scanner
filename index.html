@@ -79,7 +79,7 @@ footer{color:var(--mu);font-size:12px;margin:14px 0 6px;line-height:1.7}
 </div>
 <div style="height:10px"></div>
 <div id="list"><div class="empty">載入中…</div></div>
-<footer>每格：態別符號｜RSI｜週期。底色愈深＝RSI愈極端（固定區與動態區平均）。左側色條＝已確認；右上黃點＝該週期態別較上次掃描改變；點擊列可看完整說明。<br>週期涵蓋 1D／4H／1H／15M／5M 共5個。「已確認」＝量能達標（量≥近200根量能70分位）＋同態別已持續≥3根，兩者同時成立才算，未確認時反轉/背離不顯示、分數打對折。<br>「綜合判讀」＝各週期最近N根（1D:12／4H:15／1H:18／15M:20／5M:24）的態別分數、RSI、動態分區、量能確認率加權後產出，與指標儀表板一致。<br>▲▼建倉 △▽平倉 ↑↓反轉 ◆◇背離。CVD 使用幣安主動買量計算（非近似）。OI 優先採幣安 USDT 本位持倉量；單一交易所若暫時取不到，改以 CVD 方向近似替代並標示[C]（不再退化為4態，對齊指標「OI失效時仍以CVD估算維持8態」的設計）。資料為推定分類，非交易建議。<br>展開列後方可切換週期查看K線圖，K棒顏色＝該根態別（價漲組綠系／價跌組紅系，組內飽和度依態別可信度排序），越鮮豔代表該根量能已達標，越混濁代表未達標；顏色深淺同時受RSI偏離中軸幅度影響。<br>圖表右側為價格刻度、底部為時間刻度；滑鼠移動或手指點按K棒可顯示該根實際OHLC數值與時間。點列名前的☆可釘選常盯合約，釘選後固定顯示在列表最上方。合約若因暫時觸發交易所限速而沿用舊資料，會在名稱旁標示「⚠資料可能過期」。</footer>
+<footer>每格：態別符號｜RSI｜週期。底色愈深＝RSI愈極端（固定區與動態區平均）。左側色條＝已確認；右上黃點＝該週期態別較上次掃描改變；點擊列可看完整說明。<br>週期涵蓋 1D／4H／1H／15M／5M 共5個。「已確認」＝量能達標（量≥近200根量能70分位）＋同態別已持續≥3根，兩者同時成立才算，未確認時反轉/背離不顯示、分數打對折。<br>「綜合判讀」＝各週期最近N根（1D:12／4H:15／1H:18／15M:20／5M:24）的態別分數、RSI、動態分區、量能確認率加權後產出，與指標儀表板一致。<br>▲▼建倉 △▽平倉 ↑↓反轉 ◆◇背離，皆分兩階段：轉態當根量能達標先顯示半透明待確認，持續到第3根才顯示實色已確認（每段只標一次，不會整段常亮）。CVD 使用幣安主動買量計算（非近似）。OI 優先採幣安 USDT 本位持倉量；單一交易所若暫時取不到，改以 CVD 方向近似替代並標示[C]（不再退化為4態，對齊指標「OI失效時仍以CVD估算維持8態」的設計）。資料為推定分類，非交易建議。<br>展開列後方可切換週期查看K線圖，K棒顏色＝該根態別（價漲組綠系／價跌組紅系，組內飽和度依態別可信度排序），越鮮豔代表該根量能已達標，越混濁代表未達標；顏色深淺同時受RSI偏離中軸幅度影響。<br>圖表右側為價格刻度、底部為時間刻度；滑鼠移動或手指點按K棒可顯示該根實際OHLC數值與時間。點列名前的☆可釘選常盯合約，釘選後固定顯示在列表最上方。合約若因暫時觸發交易所限速而沿用舊資料，會在名稱旁標示「⚠資料可能過期」。</footer>
 </div>
 <script>
 const B='https://fapi.binance.com',$=s=>document.querySelector(s);
@@ -119,20 +119,28 @@ function stateColor(s,conf,it){
 }
 function buildCandles(kl,pUpA,oiUpAt,cUpA,rs,volThresh,v){
  const n=kl.length,MAXB=200,start=Math.max(0,n-MAXB),cd=[];
- let curSi=null,curDur=0;
+ let curSi=null,curDur=1,ctxAtTransition=0; // ctxAtTransition對應Pine的var：只在轉態那一根重新鎖定，之後同一段持續期間都沿用
  for(let i=0;i<n;i++){
   const si=st8(pUpA[i],oiUpAt(i),cUpA[i]);
-  curDur=(si===curSi)?curDur+1:1;curSi=si; // 逐根累積同態別連續根數，跟現有dur算法（從最新一根往回數）同一套規則
+  const hadPrev=curSi!==null,same=hadPrev&&si===curSi,isTransition=hadPrev&&!same;
+  curDur=same?curDur+1:1;
+  if(isTransition)ctxAtTransition=ctxOf(si,rs[i]);
+  curSi=si;
   if(i<start)continue;
   const ri=rs[i];if(isNaN(ri))continue;
   const it=Math.abs(fz(ri)-2.5)/2.5;
-  const conf=!isNaN(volThresh)&&v[i]>=volThresh;
+  const conf=!isNaN(volThresh)&&v[i]>=volThresh; // baseGate（OI恆有效，對齊Pine useFallbackOI恆開）
   const col=stateColor(si,conf,it);
-  const ok=conf&&curDur>=CONFIRM_BARS; // 與明細表「已確認」同一判定：量能達標＋同態別已持續≥3根
-  const evt=ok?ctxOf(si,ri):0;
+  const pendingSig=conf&&isTransition; // Stage1：轉態當根、量能已達標→半透明待確認（單次）
+  const confirmSig=conf&&curDur===CONFIRM_BARS; // Stage2：剛好持續到第N根才顯示（單次，不是整段常亮）
   let mark=null;
-  if(evt==2)mark={icon:si==1?'↑':'↓',above:si==5,col:si==1?'#2ebd85':'#f6465d'};
-  else if(evt==3)mark={icon:ST[si-1][0],above:(si==2||si==4),col:'#f0b90b'};
+  if((pendingSig||confirmSig)&&ctxAtTransition!==0){
+   const c=ctxAtTransition; // 1=順勢延伸 2=反轉 3=背離，鎖定在轉態當下，不隨後續K棒RSI變動而改變
+   const icon=c===2?(si===1?'↑':'↓'):ST[si-1][0]; // 順勢延伸/背離＝用該態別自己的圖示；反轉＝↑↓
+   const above=c===1?(si===5||si===7):c===2?si===5:(si===2||si===4);
+   const col2=c===3?'#f0b90b':((si===1||si===3)?'#2ebd85':'#f6465d');
+   mark={icon,above,col:col2,pending:pendingSig};
+  }
   cd.push({time:Math.floor(+kl[i][0]/1000),open:+kl[i][1],high:+kl[i][2],low:+kl[i][3],close:+kl[i][4],color:col,borderColor:col,wickColor:col,mark});
  }
  return cd;
@@ -158,8 +166,11 @@ function analyze(kl,oi,ti){
  const cs=wma(tb.map((x,i)=>2*x-v[i]),sm),cUpA=sticky(cs,sma(abs(cs),sm));
  // OI：真實幣安OI優先；取不到則以CVD方向近似替代，恆維持8態（對齊 useFallbackOI 預設開啟）
  let ov=false,oUpA=null,off=0;
- if(oi&&oi.length>sm+3){const od=chg(wma(oi,sm));oUpA=sticky(od,sma(abs(od),sm));ov=true;off=n-oi.length}
- const oiUpAt=i=>ov?oUpA[i-off]:cUpA[i];
+ if(oi&&oi.length>sm+3){
+  const oiArr=oi.length>n?oi.slice(oi.length-n):oi; // 對齊K線末端，避免OI筆數超過K線根數時off算成負值
+  const od=chg(wma(oiArr,sm));oUpA=sticky(od,sma(abs(od),sm));ov=true;off=n-oiArr.length;
+ }
+ const oiUpAt=i=>(ov&&i>=off)?oUpA[i-off]:cUpA[i]; // 未覆蓋到真實OI的較舊K棒明確退回CVD方向近似
  const s=st8(pUpA[n-1],oiUpAt(n-1),cUpA[n-1]);
  let dur=1;
  for(let i=n-2;i>=0;i--){
@@ -190,7 +201,7 @@ function analyze(kl,oi,ti){
 // ---- 取資料 ----
 async function j(u){const r=await fetch(B+u);if(!r.ok)throw new Error(r.status);return r.json()}
 async function getOI(sym,tf){const k=sym+tf,o=oiC[k];if(o&&Date.now()-o.t<3e5)return o.d;
- try{const d=(await j(`/futures/data/openInterestHist?symbol=${sym}&period=${tf}&limit=60`)).map(x=>+x.sumOpenInterest);oiC[k]={t:Date.now(),d};return d}catch(e){return o?o.d:null}}
+ try{const d=(await j(`/futures/data/openInterestHist?symbol=${sym}&period=${tf}&limit=500`)).map(x=>+x.sumOpenInterest);oiC[k]={t:Date.now(),d};return d}catch(e){return o?o.d:null}}
 async function pool(a,n,f){let i=0;await Promise.all(Array(n).fill(0).map(async()=>{while(i<a.length)await f(a[i++])}))}
 const setSt=(t,e)=>{const s=$('#st');s.textContent=t;s.className=e?'err':''};
 async function scan(){
@@ -369,9 +380,11 @@ function drawCandles(canvas,cd){
  cd.forEach((c,i)=>{
   if(!c.mark)return;
   const cx=padL+slot*i+slot/2,my=c.mark.above?y(c.high)-7:y(c.low)+7;
+  ctx.save();if(c.mark.pending)ctx.globalAlpha=0.45;
   ctx.fillStyle=c.mark.col;
   if(slot>=7){ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(c.mark.icon,cx,my)}
   else{ctx.beginPath();ctx.arc(cx,my,1.8,0,Math.PI*2);ctx.fill()}
+  ctx.restore();
  });
  canvas._layout={padL,padR,padT,padB,plotW,plotH,slot,lo,hi,cssW,cssH,cd}; // 供十字準星查詢座標換算
  return true;
