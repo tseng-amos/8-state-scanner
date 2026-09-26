@@ -340,8 +340,13 @@ $('#list').addEventListener('click',e=>{
  if(cf){e.stopPropagation();const wrap=cf.closest('.cwrap');wrap.querySelectorAll('.cf').forEach(b=>b.setAttribute('aria-pressed',b===cf?'true':'false'));paintChart(wrap.dataset.sym,+cf.dataset.i);return}
  if(e.target.closest('.cwrap'))return;
  const r=e.target.closest('.row');if(!r)return;const s=r.dataset.s;
- if(open.has(s)){open.delete(s)}else{open.add(s);requestAnimationFrame(()=>paintChart(s))}
- r.classList.toggle('open');
+ if(open.has(s)){
+  open.delete(s);r.classList.remove('open');
+ }else{
+  open.forEach(o=>{if(o!==s){const or=document.querySelector(`.row[data-s="${o}"]`);if(or)or.classList.remove('open')}}); // 關掉其他已展開的列，避免畫面越開越長
+  open.clear();open.add(s);r.classList.add('open');
+  requestAnimationFrame(()=>paintChart(s));
+ }
 });
 function ui(){
  $('#ref').value=S.ref;$('#srt').value=S.srt;
