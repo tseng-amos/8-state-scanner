@@ -226,6 +226,41 @@ function detRow(a){const b=bk(a.s),col=b==1?'var(--bull)':b==-1?'var(--bear)':'v
 function detTable(t){return`<div class="dwrap"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>分區</th><th>量能</th><th>情境</th><th>綜合判讀</th></tr></thead><tbody>${t.map(detRow).join('')}</tbody></table></div>`}
 function chartBlock(sym){const tfIdx=chartTf.get(sym)??1;return`<div class="cwrap" data-sym="${sym}"><div class="cchips">${TFS.map((tf,i)=>`<button class="chip cf" data-i="${i}" aria-pressed="${i==tfIdx}">${tf[0]}</button>`).join('')}</div><div class="cchart" id="ck_${sym}"></div></div>`}
 let chartTf=new Map();
+let chartView=new Map(); // sym -> {n,off,tfIdx}：n=目前可見根數（縮放），off=可見區間右緣距離最新那根的偏移根數（平移）
+function clampView(v,len){v.n=Math.max(10,Math.min(len,Math.round(v.n)));v.off=Math.max(0,Math.min(len-v.n,Math.round(v.off)))}
+function getView(sym,tfIdx,len){let v=chartView.get(sym);if(!v||v.tfIdx!==tfIdx){v={n:len,off:0,tfIdx};chartView.set(sym,v)}clampView(v,len);return v}
+// 手勢：雙指縮放、單指拖曳平移、雙擊重置縮放；每個canvas只綁定一次
+function bindChartGestures(canvas,sym){
+ let g=null;
+ const dist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+ const curCtx=()=>{const tfIdx=chartTf.get(sym)??1,r=rows.get(sym),cd=r&&r.t&&r.t[tfIdx]&&r.t[tfIdx].cd;if(!cd||!cd.length)return null;return{cd,v:getView(sym,tfIdx,cd.length)}};
+ canvas.addEventListener('touchstart',e=>{
+  const c=curCtx();if(!c)return;
+  if(e.touches.length>=2)g={mode:'pinch',d0:dist(e.touches[0],e.touches[1]),n0:c.v.n,off0:c.v.off,len:c.cd.length};
+  else g={mode:'pan',x0:e.touches[0].clientX,off0:c.v.off,n:c.v.n,len:c.cd.length};
+ },{passive:true});
+ canvas.addEventListener('touchmove',e=>{
+  if(!g)return;const c=curCtx();if(!c)return;e.preventDefault();
+  if(g.mode=='pinch'&&e.touches.length>=2){
+   const d=dist(e.touches[0],e.touches[1]);
+   c.v.n=g.n0*(g.d0/Math.max(1,d));c.v.off=g.off0;clampView(c.v,g.len);
+  }else if(g.mode=='pan'&&e.touches.length==1){
+   const dx=e.touches[0].clientX-g.x0,barW=canvas.clientWidth/g.n;
+   c.v.off=g.off0+dx/barW;clampView(c.v,g.len);
+  }
+  paintChart(sym);
+ },{passive:false});
+ const clearG=()=>g=null;
+ canvas.addEventListener('touchend',clearG);canvas.addEventListener('touchcancel',clearG);
+ let lastTap=0;
+ canvas.addEventListener('touchend',()=>{const t=Date.now();if(t-lastTap<300){const c=curCtx();if(c){c.v.n=c.cd.length;c.v.off=0;paintChart(sym)}}lastTap=t});
+ canvas.addEventListener('wheel',e=>{
+  const c=curCtx();if(!c)return;e.preventDefault();
+  if(Math.abs(e.deltaY)>=Math.abs(e.deltaX)){c.v.n*=e.deltaY>0?1.15:1/1.15;clampView(c.v,c.cd.length)}
+  else{const barW=canvas.clientWidth/c.v.n;c.v.off+=e.deltaX/barW;clampView(c.v,c.cd.length)}
+  paintChart(sym);
+ },{passive:false});
+}
 // 自製K棒繪圖（不依賴外部函式庫）：直接用Canvas 2D API畫，避開LightweightCharts在部分行動裝置WebView環境下容器量得到、資料塞進去卻畫不出東西的問題
 function drawCandles(canvas,cd){
  if(!cd||!cd.length)return false;
@@ -261,14 +296,16 @@ function paintChart(sym,tfIdx){
  chartTf.set(sym,tfIdx);
  const cd=r.t[tfIdx]&&r.t[tfIdx].cd;
  if(!cd||!cd.length){el.textContent=`［除錯］該週期(${TFS[tfIdx][0]})沒有K棒資料`;return}
+ const view=getView(sym,tfIdx,cd.length);
+ const slice=cd.slice(cd.length-view.off-view.n,cd.length-view.off);
  try{
   let canvas=el.querySelector('canvas');
-  if(!canvas){el.innerHTML='';canvas=document.createElement('canvas');canvas.style.cssText='width:100%;height:220px;display:block';el.appendChild(canvas)}
-  const ok=drawCandles(canvas,cd);
+  if(!canvas){el.innerHTML='';canvas=document.createElement('canvas');canvas.style.cssText='width:100%;height:220px;display:block;touch-action:none';el.appendChild(canvas);bindChartGestures(canvas,sym)}
+  const ok=drawCandles(canvas,slice);
   if(!ok){el.textContent='［除錯］無法取得繪圖範圍（資料異常）';return}
   let dbg=el.parentElement.querySelector('.cdbg');
   if(!dbg){dbg=document.createElement('div');dbg.className='cdbg';dbg.style.cssText='font-size:10px;color:var(--mu);margin-top:2px';el.parentElement.appendChild(dbg)}
-  dbg.textContent=`已繪製 ${cd.length} 根K棒（自製渲染器）`;
+  dbg.textContent=`顯示 ${slice.length}/${cd.length} 根K棒｜可兩指縮放、單指拖曳、雙擊重置`;
  }catch(e){el.textContent='［除錯］圖表繪製錯誤：'+e.message}
 }
 function render(){
