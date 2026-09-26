@@ -257,12 +257,17 @@ function paintChart(sym,tfIdx){
  }catch(e){el.textContent='［除錯］圖表繪製錯誤：'+e.message}
 }
 function render(){
+ // 展開列的圖表容器整段先借出來保留（含其中活著的canvas/LightweightCharts實例），避免整批innerHTML重繪把它們摧毀又重建
+ const kept=new Map();
+ open.forEach(s=>{const cw=document.querySelector(`.cwrap[data-sym="${s}"]`);if(cw)kept.set(s,cw)});
  let a=[...rows.values()].filter(r=>r.t&&pass[S.flt](r));
  if(S.srt=='score')a.sort((x,y)=>compScore(y)-compScore(x));else a.sort((x,y)=>x.rk-y.rk);
  const pend=[...rows.values()].filter(r=>!r.t).length;
  $('#list').innerHTML=a.map(r=>{const cs=compScore(r),bu=cnt(r,x=>bk(x.s)==1),be=cnt(r,x=>bk(x.s)==-1);
   return`<div class="row" data-s="${r.sym}"><div class="sym"><div class="l1"><b>${r.sym.replace('USDT','')}</b><i>#${r.rk}</i><span class="sum ${cs>0?'up':cs<0?'dn':''}">${cs>0?'+':''}${cs}分 ${scoreLabel(cs)}｜多${bu} 空${be}</span></div><div class="l2">${fp(r.px)} <span class="${r.ch>=0?'up':'dn'}">${r.ch>=0?'+':''}${r.ch.toFixed(2)}%</span> · ${fq(r.qv)}</div></div>${r.t.map(cell).join('')}<div class="det">${detTable(r.t)}${chartBlock(r.sym)}</div></div>`}).join('')||`<div class="empty">${pend?'掃描中…':'沒有符合條件的合約'}</div>`;
  document.querySelectorAll('.row').forEach(e=>{if(open.has(e.dataset.s))e.classList.add('open')});
+ // 把借出的舊容器換回新產生的空殼，讓chart實例（及其aria-pressed週期選擇狀態）原封不動延續下去
+ kept.forEach((cw,s)=>{const ph=document.querySelector(`.cwrap[data-sym="${s}"]`);if(ph&&ph!==cw)ph.replaceWith(cw)});
  open.forEach(s=>{if(document.getElementById('ck_'+s))paintChart(s)});
 }
 let lastRender=0;
