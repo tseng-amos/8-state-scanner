@@ -65,7 +65,6 @@ footer{color:var(--mu);font-size:12px;margin:14px 0 6px;line-height:1.7}
 <div id="list"><div class="empty">載入中…</div></div>
 <footer>每格：態別符號｜RSI｜週期。底色愈深＝RSI愈極端（固定區與動態區平均）。左側色條＝已確認；右上黃點＝該週期態別較上次掃描改變；點擊列可看完整說明。<br>週期涵蓋 1D／4H／1H／15M／5M 共5個。「已確認」＝量能達標（量≥近200根量能70分位）＋同態別已持續≥3根，兩者同時成立才算，未確認時反轉/背離不顯示、分數打對折。<br>「綜合判讀」＝各週期最近N根（1D:12／4H:15／1H:18／15M:20／5M:24）的態別分數、RSI、動態分區、量能確認率加權後產出，與指標儀表板一致。<br>▲▼建倉 △▽平倉 ↑↓反轉 ◆◇背離。CVD 使用幣安主動買量計算（非近似）。OI 優先採幣安 USDT 本位持倉量；單一交易所若暫時取不到，改以 CVD 方向近似替代並標示[C]（不再退化為4態，對齊指標「OI失效時仍以CVD估算維持8態」的設計）。資料為推定分類，非交易建議。<br>展開列後方可切換週期查看K線圖，K棒顏色＝該根態別（價漲組綠系／價跌組紅系，組內飽和度依態別可信度排序），越鮮豔代表該根量能已達標，越混濁代表未達標；顏色深淺同時受RSI偏離中軸幅度影響。</footer>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';document.head.appendChild(s)"></script>
 <script>
 const B='https://fapi.binance.com',$=s=>document.querySelector(s);
 // [標籤, RSI長度, WMA平滑期, 綜合判讀取樣根數N]；量能改採全域自適應分位數，各週期共用同一門檻
@@ -225,49 +224,60 @@ function detRow(a){const b=bk(a.s),col=b==1?'var(--bull)':b==-1?'var(--bear)':'v
  const act=`<span class="${a.actionCls||'act-neu'}">${a.action||'—'}</span>`;
  return`<tr><td>${a.tf}</td><td>${ic} ${lb}</td><td>${zn}</td><td>${vt}</td><td>${cx}</td><td>${act}</td></tr>`}
 function detTable(t){return`<div class="dwrap"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>分區</th><th>量能</th><th>情境</th><th>綜合判讀</th></tr></thead><tbody>${t.map(detRow).join('')}</tbody></table></div>`}
-function chartBlock(sym){return`<div class="cwrap" data-sym="${sym}"><div class="cchips">${TFS.map((tf,i)=>`<button class="chip cf" data-i="${i}" aria-pressed="${i==1}">${tf[0]}</button>`).join('')}</div><div class="cchart" id="ck_${sym}">［容器已建立，等待繪圖］</div></div>`}
-let charts=new Map();
+function chartBlock(sym){const tfIdx=chartTf.get(sym)??1;return`<div class="cwrap" data-sym="${sym}"><div class="cchips">${TFS.map((tf,i)=>`<button class="chip cf" data-i="${i}" aria-pressed="${i==tfIdx}">${tf[0]}</button>`).join('')}</div><div class="cchart" id="ck_${sym}"></div></div>`}
+let chartTf=new Map();
+// 自製K棒繪圖（不依賴外部函式庫）：直接用Canvas 2D API畫，避開LightweightCharts在部分行動裝置WebView環境下容器量得到、資料塞進去卻畫不出東西的問題
+function drawCandles(canvas,cd){
+ if(!cd||!cd.length)return false;
+ const dpr=window.devicePixelRatio||1;
+ const cssW=canvas.parentElement.clientWidth||canvas.clientWidth||300,cssH=220;
+ canvas.width=Math.max(1,Math.round(cssW*dpr));canvas.height=Math.max(1,Math.round(cssH*dpr));
+ canvas.style.width=cssW+'px';canvas.style.height=cssH+'px';
+ const ctx=canvas.getContext('2d');if(!ctx)return false;
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,cssW,cssH);
+ let lo=Infinity,hi=-Infinity;
+ cd.forEach(c=>{if(c.low<lo)lo=c.low;if(c.high>hi)hi=c.high});
+ if(!isFinite(lo)||!isFinite(hi))return false;
+ if(lo===hi){lo-=1;hi+=1}
+ const pad=(hi-lo)*0.08;lo-=pad;hi+=pad;
+ const padL=2,padR=2,padT=4,padB=4,plotW=cssW-padL-padR,plotH=cssH-padT-padB,n=cd.length,slot=plotW/n;
+ const bw=Math.max(1,Math.min(slot*0.7,10));
+ const y=v=>padT+plotH-(v-lo)/(hi-lo)*plotH;
+ cd.forEach((c,i)=>{
+  const cx=padL+slot*i+slot/2;
+  ctx.strokeStyle=c.wickColor||c.color;ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(cx,y(c.high));ctx.lineTo(cx,y(c.low));ctx.stroke();
+  const yO=y(c.open),yC=y(c.close),top=Math.min(yO,yC),h=Math.max(1,Math.abs(yC-yO));
+  ctx.fillStyle=c.color;ctx.fillRect(cx-bw/2,top,bw,h);
+ });
+ return true;
+}
 function paintChart(sym,tfIdx){
  const el=document.getElementById('ck_'+sym);
  const r=rows.get(sym);
  if(!el)return; // 容器都找不到，代表這一列目前沒展開，屬正常情況
  if(!r||!r.t){el.textContent='［除錯］找不到該幣別的態別資料（rows/r.t 尚未就緒）';return}
- if(typeof LightweightCharts=='undefined'){el.textContent='［除錯］LightweightCharts 函式庫未載入（網路被擋或CDN失敗）';return}
- let inst=charts.get(sym);
- if(tfIdx==null)tfIdx=inst?inst.tfIdx:1;
+ if(tfIdx==null)tfIdx=chartTf.get(sym)??1;
+ chartTf.set(sym,tfIdx);
  const cd=r.t[tfIdx]&&r.t[tfIdx].cd;
- if(!cd||!cd.length){el.textContent=`［除錯］該週期(${TFS[tfIdx][0]})沒有K棒資料 (cd=${JSON.stringify(cd&&cd.slice(0,1))})`;return}
+ if(!cd||!cd.length){el.textContent=`［除錯］該週期(${TFS[tfIdx][0]})沒有K棒資料`;return}
  try{
-  if(inst&&inst.chartEl===el){
-   inst.tfIdx=tfIdx;inst.series.setData(cd);inst.chart.timeScale().fitContent();
-  }else{
-   if(inst){try{inst.chart.remove()}catch(e){}charts.delete(sym)} // 舊容器已被整批render()換掉，先釋放舊chart避免canvas/GPU context洩漏（手機瀏覽器有上限，超過會靜默畫不出來）
-   el.innerHTML='';
-   const w=el.clientWidth||300;
-   const tx=getComputedStyle(document.body).color;
-   const chart=LightweightCharts.createChart(el,{width:w,height:220,layout:{background:{color:'transparent'},textColor:tx},grid:{vertLines:{color:'rgba(139,149,163,.15)'},horzLines:{color:'rgba(139,149,163,.15)'}},timeScale:{timeVisible:true,secondsVisible:false,borderVisible:false},rightPriceScale:{borderVisible:false}});
-   const series=chart.addCandlestickSeries({borderVisible:false,wickVisible:true,upColor:'#2ebd85',downColor:'#f6465d',wickUpColor:'#2ebd85',wickDownColor:'#f6465d'});
-   series.setData(cd);chart.timeScale().fitContent();
-   charts.set(sym,{chart,series,tfIdx,chartEl:el});
-   const dbg=document.createElement('div');
-   dbg.style.cssText='font-size:10px;color:var(--mu);margin-top:2px';
-   dbg.textContent=`［除錯］已繪製 ${cd.length} 根K棒，容器寬 ${w}px，LWC版本 ${LightweightCharts.version?LightweightCharts.version():'?'}`;
-   el.parentElement.appendChild(dbg);
-  }
+  let canvas=el.querySelector('canvas');
+  if(!canvas){el.innerHTML='';canvas=document.createElement('canvas');canvas.style.cssText='width:100%;height:220px;display:block';el.appendChild(canvas)}
+  const ok=drawCandles(canvas,cd);
+  if(!ok){el.textContent='［除錯］無法取得繪圖範圍（資料異常）';return}
+  let dbg=el.parentElement.querySelector('.cdbg');
+  if(!dbg){dbg=document.createElement('div');dbg.className='cdbg';dbg.style.cssText='font-size:10px;color:var(--mu);margin-top:2px';el.parentElement.appendChild(dbg)}
+  dbg.textContent=`已繪製 ${cd.length} 根K棒（自製渲染器）`;
  }catch(e){el.textContent='［除錯］圖表繪製錯誤：'+e.message}
 }
 function render(){
- // 展開列的圖表容器整段先借出來保留（含其中活著的canvas/LightweightCharts實例），避免整批innerHTML重繪把它們摧毀又重建
- const kept=new Map();
- open.forEach(s=>{const cw=document.querySelector(`.cwrap[data-sym="${s}"]`);if(cw)kept.set(s,cw)});
  let a=[...rows.values()].filter(r=>r.t&&pass[S.flt](r));
  if(S.srt=='score')a.sort((x,y)=>compScore(y)-compScore(x));else a.sort((x,y)=>x.rk-y.rk);
  const pend=[...rows.values()].filter(r=>!r.t).length;
  $('#list').innerHTML=a.map(r=>{const cs=compScore(r),bu=cnt(r,x=>bk(x.s)==1),be=cnt(r,x=>bk(x.s)==-1);
   return`<div class="row" data-s="${r.sym}"><div class="sym"><div class="l1"><b>${r.sym.replace('USDT','')}</b><i>#${r.rk}</i><span class="sum ${cs>0?'up':cs<0?'dn':''}">${cs>0?'+':''}${cs}分 ${scoreLabel(cs)}｜多${bu} 空${be}</span></div><div class="l2">${fp(r.px)} <span class="${r.ch>=0?'up':'dn'}">${r.ch>=0?'+':''}${r.ch.toFixed(2)}%</span> · ${fq(r.qv)}</div></div>${r.t.map(cell).join('')}<div class="det">${detTable(r.t)}${chartBlock(r.sym)}</div></div>`}).join('')||`<div class="empty">${pend?'掃描中…':'沒有符合條件的合約'}</div>`;
  document.querySelectorAll('.row').forEach(e=>{if(open.has(e.dataset.s))e.classList.add('open')});
- // 把借出的舊容器換回新產生的空殼，讓chart實例（及其aria-pressed週期選擇狀態）原封不動延續下去
- kept.forEach((cw,s)=>{const ph=document.querySelector(`.cwrap[data-sym="${s}"]`);if(ph&&ph!==cw)ph.replaceWith(cw)});
  open.forEach(s=>{if(document.getElementById('ck_'+s))paintChart(s)});
 }
 let lastRender=0;
