@@ -107,13 +107,21 @@ function stateColor(s,conf,it){
 }
 function buildCandles(kl,pUpA,oiUpAt,cUpA,rs,volThresh,v){
  const n=kl.length,MAXB=200,start=Math.max(0,n-MAXB),cd=[];
- for(let i=start;i<n;i++){
-  const ri=rs[i];if(isNaN(ri))continue;
+ let curSi=null,curDur=0;
+ for(let i=0;i<n;i++){
   const si=st8(pUpA[i],oiUpAt(i),cUpA[i]);
+  curDur=(si===curSi)?curDur+1:1;curSi=si; // 逐根累積同態別連續根數，跟現有dur算法（從最新一根往回數）同一套規則
+  if(i<start)continue;
+  const ri=rs[i];if(isNaN(ri))continue;
   const it=Math.abs(fz(ri)-2.5)/2.5;
   const conf=!isNaN(volThresh)&&v[i]>=volThresh;
   const col=stateColor(si,conf,it);
-  cd.push({time:Math.floor(+kl[i][0]/1000),open:+kl[i][1],high:+kl[i][2],low:+kl[i][3],close:+kl[i][4],color:col,borderColor:col,wickColor:col});
+  const ok=conf&&curDur>=CONFIRM_BARS; // 與明細表「已確認」同一判定：量能達標＋同態別已持續≥3根
+  const evt=ok?ctxOf(si,ri):0;
+  let mark=null;
+  if(evt==2)mark={icon:si==1?'↑':'↓',above:si==5,col:si==1?'#2ebd85':'#f6465d'};
+  else if(evt==3)mark={icon:ST[si-1][0],above:(si==2||si==4),col:'#f0b90b'};
+  cd.push({time:Math.floor(+kl[i][0]/1000),open:+kl[i][1],high:+kl[i][2],low:+kl[i][3],close:+kl[i][4],color:col,borderColor:col,wickColor:col,mark});
  }
  return cd;
 }
@@ -296,7 +304,7 @@ function drawCandles(canvas,cd){
  if(!isFinite(lo)||!isFinite(hi))return false;
  if(lo===hi){lo-=1;hi+=1}
  const pad=(hi-lo)*0.08;lo-=pad;hi+=pad;
- const padL=2,padR=2,padT=4,padB=4,plotW=cssW-padL-padR,plotH=cssH-padT-padB,n=cd.length,slot=plotW/n;
+ const padL=2,padR=2,padT=13,padB=13,plotW=cssW-padL-padR,plotH=cssH-padT-padB,n=cd.length,slot=plotW/n;
  const bw=Math.max(1,Math.min(slot*0.7,10));
  const y=v=>padT+plotH-(v-lo)/(hi-lo)*plotH;
  cd.forEach((c,i)=>{
@@ -306,6 +314,14 @@ function drawCandles(canvas,cd){
   const yO=y(c.open),yC=y(c.close),top=Math.min(yO,yC),h=Math.max(1,Math.abs(yC-yO));
   ctx.fillStyle=c.color;ctx.fillRect(cx-bw/2,top,bw,h);
  });
+ if(slot>=7){ // 疊加反轉/背離標記；根數太密（縮太小）時不畫，避免文字互相重疊
+  ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  cd.forEach((c,i)=>{
+   if(!c.mark)return;
+   const cx=padL+slot*i+slot/2,my=c.mark.above?y(c.high)-7:y(c.low)+7;
+   ctx.fillStyle=c.mark.col;ctx.fillText(c.mark.icon,cx,my);
+  });
+ }
  return true;
 }
 function paintChart(sym,tfIdx){
