@@ -347,12 +347,14 @@ function drawCandles(canvas,cd){
   ctx.strokeStyle=lnCol;ctx.globalAlpha=.6;ctx.beginPath();ctx.moveTo(padL,yy);ctx.lineTo(padL+plotW,yy);ctx.stroke();ctx.globalAlpha=1;
   ctx.fillStyle=muCol;ctx.fillText(fp(v),padL+plotW+4,yy);
  }
- // 時間刻度：依可視根數挑最多4個等距標籤
+ // 時間刻度：依可視根數挑最多4個等距標籤；頭尾兩個貼齊邊界對齊，避免文字超出畫布被裁掉
  const TIME_N=Math.min(4,n);
- ctx.textBaseline='alphabetic';ctx.textAlign='center';
+ ctx.textBaseline='alphabetic';
  for(let k=0;k<TIME_N;k++){
   const i=Math.round(k*(n-1)/Math.max(1,TIME_N-1)),d=new Date(cd[i].time*1000);
-  const cx=padL+slot*i+slot/2;
+  const isFirst=k===0,isLast=k===TIME_N-1;
+  ctx.textAlign=isFirst?'left':isLast?'right':'center';
+  const cx=isFirst?padL:isLast?padL+plotW:padL+slot*i+slot/2;
   ctx.fillStyle=muCol;
   ctx.fillText(`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`,cx,cssH-3);
  }
