@@ -79,14 +79,14 @@ footer{color:var(--mu);font-size:12px;margin:14px 0 6px;line-height:1.7}
 </div>
 <div style="height:10px"></div>
 <div id="list"><div class="empty">載入中…</div></div>
-<footer>每格：態別符號｜RSI｜週期。底色愈深＝RSI愈極端（固定區與動態區平均）。左側色條＝已確認；右上黃點＝該週期態別較上次掃描改變；點擊列可看完整說明。<br>週期涵蓋 1D／4H／1H／15M／5M 共5個。「已確認」＝量能達標（量≥近200根量能70分位）＋同態別已持續≥3根，兩者同時成立才算，未確認時反轉/背離不顯示、分數打對折。<br>「綜合判讀」＝各週期最近N根（1D:12／4H:15／1H:18／15M:20／5M:24）的態別分數、RSI、動態分區、量能確認率加權後產出，與指標儀表板一致。<br>▲▼建倉 △▽平倉 ↑↓反轉 ◆◇背離，皆分兩階段：轉態當根量能達標先顯示半透明待確認，持續到第3根才顯示實色已確認（每段只標一次，不會整段常亮）。CVD 使用幣安主動買量計算（非近似）。OI 優先採幣安 USDT 本位持倉量；單一交易所若暫時取不到，改以 CVD 方向近似替代並標示[C]（不再退化為4態，對齊指標「OI失效時仍以CVD估算維持8態」的設計）。資料為推定分類，非交易建議。<br>展開列後方可切換週期查看K線圖，K棒顏色＝該根態別（價漲組綠系／價跌組紅系，組內飽和度依態別可信度排序），越鮮豔代表該根量能已達標，越混濁代表未達標；顏色深淺同時受RSI偏離中軸幅度影響。<br>圖表右側為價格刻度、底部為時間刻度；滑鼠移動或手指點按K棒可顯示該根實際OHLC數值與時間。拖曳右側價格軸可單獨縮放價格範圍、拖曳底部時間軸可單獨縮放時間範圍（滑鼠滾輪同理），雙擊主圖重置兩軸、雙擊單一軸只重置該軸。點列名前的☆可釘選常盯合約，釘選後固定顯示在列表最上方。合約若因暫時觸發交易所限速而沿用舊資料，會在名稱旁標示「⚠資料可能過期」。</footer>
+<footer>每格：態別符號｜RSI｜週期。底色愈深＝RSI愈極端（固定區與動態區平均）。左側色條＝已確認；右上黃點＝該週期態別較上次掃描改變；點擊列可看完整說明。<br>週期涵蓋 1D／4H／1H／15M／5M 共5個。「已確認」＝量能達標（量≥近200根量能70分位，逐根滾動計算）＋波動度濾網通過（ATR≥近200根30分位，避免死寂盤整）＋同態別已持續≥3根，三者同時成立才算，未確認時反轉/背離不顯示、分數打對折。<br>「綜合判讀」＝各週期最近N根（1D:12／4H:15／1H:18／15M:20／5M:24）的態別分數、RSI、動態分區、量能與波動度確認率加權後產出；「多頭推進/空頭主導」額外需近N根趨勢強度(ADX≥近200根70分位)確認率過半，與指標儀表板一致。<br>▲▼建倉 △▽平倉為順勢延伸訊號，額外需通過ADX趨勢強度濾網；↑↓反轉、◆◇背離則不需要。所有標記皆為單一確認事件：同態別剛好持續到第3根、且當根量能與波動度都達標時才觸發一次（用當根即時RSI/態別判斷順勢/反轉/背離，不會整段常亮，也不會沿用轉態當下的舊判讀）。CVD 使用幣安主動買量計算（非近似）。OI 優先採幣安 USDT 本位持倉量；單一交易所若暫時取不到，改以 CVD 方向近似替代並標示[C]（不再退化為4態，對齊指標「OI失效時仍以CVD估算維持8態」的設計）。資料為推定分類，非交易建議。<br>展開列後方可切換週期查看K線圖，K棒顏色＝該根態別（價漲組綠系／價跌組紅系，組內飽和度依態別可信度排序），越鮮豔代表該根量能已達標，越混濁代表未達標；顏色深淺同時受RSI固定區與動態區平均後的偏離幅度影響。<br>圖表右側為價格刻度、底部為時間刻度；滑鼠移動或手指點按K棒可顯示該根實際OHLC數值與時間。拖曳右側價格軸可單獨縮放價格範圍、拖曳底部時間軸可單獨縮放時間範圍（滑鼠滾輪同理），雙擊主圖重置兩軸、雙擊單一軸只重置該軸。點列名前的☆可釘選常盯合約，釘選後固定顯示在列表最上方。合約若因暫時觸發交易所限速而沿用舊資料，會在名稱旁標示「⚠資料可能過期」。</footer>
 </div>
 <script>
 const B='https://fapi.binance.com',$=s=>document.querySelector(s);
-// [標籤, RSI長度, WMA平滑期, 綜合判讀取樣根數N]；量能改採全域自適應分位數，各週期共用同一門檻
-const TFS=[['5m',9,3,24],['15m',14,5,20],['1h',14,7,18],['4h',21,10,15],['1d',21,14,12]];
+// [標籤, RSI長度, WMA平滑期, 量能長度(供ADX週期自動對齊rsiLen／ATR週期自動對齊此值), 綜合判讀取樣根數N]
+const TFS=[['5m',9,3,6,24],['15m',14,5,9,20],['1h',14,7,14,18],['4h',21,10,20,15],['1d',21,14,30,12]];
 const TFW=[1,2,3,4,6],TFWSUM=TFW.reduce((a,b)=>a+b,0);
-const CONFIRM_BARS=3,VOL_LOOKBACK=200,VOL_PERCENTILE=70,TOP_N=50; // 與 Pine 自適應量能參數一致；TOP_N=只保留24h成交額排名前N的合約
+const CONFIRM_BARS=3,LOOKBACK=200,VOL_PERCENTILE=70,ADX_PERCENTILE=70,ATR_PERCENTILE=30,TOP_N=50; // 與 Pine 分位數濾網參數一致；TOP_N=只保留24h成交額排名前N的合約
 const ST=[['▲','順勢上漲','多方建倉'],['◆','背離上漲','空方建倉'],['△','順勢上漲','空方回補'],['◇','背離上漲','多方止損'],['▼','順勢下跌','空方建倉'],['◆','背離下跌','多方建倉'],['▽','順勢下跌','多方止損'],['◇','背離下跌','空方回補']];
 const FZ=['極低','低位','偏弱','偏強','高位','極高'],DZ=['D極低','D低','D偏弱','D偏強','D高','D極高'];
 const FLT=[['all','全部'],['bull','多頭共振≥3'],['bear','空頭共振≥3']];
@@ -104,11 +104,51 @@ const wma=(a,n)=>{const d=n*(n+1)/2;return a.map((_,i)=>{if(i<n-1)return NaN;let
 const abs=a=>a.map(x=>isNaN(x)?0:Math.abs(x));
 const chg=a=>a.map((x,i)=>i?x-a[i-1]:NaN);
 function rsi(c,n){const o=Array(c.length).fill(NaN);let g=0,l=0;for(let i=1;i<c.length;i++){const d=c[i]-c[i-1],u=Math.max(d,0),w=Math.max(-d,0);if(i<=n){g+=u/n;l+=w/n}else{g=(g*(n-1)+u)/n;l=(l*(n-1)+w)/n}if(i>=n)o[i]=l==0?100:100-100/(1+g/l)}return o}
-// 與 Pine ta.percentile_nearest_rank 對齊的最近排名百分位
-function percentileNearestRank(arr,p){
- const w=arr.filter(x=>!isNaN(x)&&x!=null).slice().sort((a,b)=>a-b);
- if(!w.length)return NaN;
- return w[Math.max(0,Math.min(Math.ceil(p/100*w.length)-1,w.length-1))];
+// 逐根滾動分位數：對齊Pine ta.percentile_nearest_rank每根都用「截至當根、往前最多lookback根」重新計算，而非整段共用單一門檻
+function rollingPercentileNearestRank(arr,lookback,p){
+ const n=arr.length,out=new Array(n).fill(NaN),win=[],buf=[];
+ for(let i=0;i<n;i++){
+  const x=arr[i];
+  if(!isNaN(x)){let lo=0,hi=win.length;while(lo<hi){const mid=(lo+hi)>>1;if(win[mid]<x)lo=mid+1;else hi=mid}win.splice(lo,0,x)}
+  buf.push(x);
+  if(i>=lookback){
+   const old=buf[i-lookback];
+   if(!isNaN(old)){let lo=0,hi=win.length;while(lo<hi){const mid=(lo+hi)>>1;if(win[mid]<old)lo=mid+1;else hi=mid}
+    if(win[lo]===old)win.splice(lo,1);else{const idx=win.indexOf(old);if(idx>=0)win.splice(idx,1)}}
+  }
+  if(win.length)out[i]=win[Math.max(0,Math.min(Math.ceil(p/100*win.length)-1,win.length-1))];
+ }
+ return out;
+}
+// True Range（含跳空）
+function trueRange(h,l,c){
+ const n=h.length,out=new Array(n).fill(NaN);
+ for(let i=0;i<n;i++)out[i]=i===0?h[i]-l[i]:Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1]));
+ return out;
+}
+// Wilder's RMA：對齊 ta.rma（前len根尚未有值時以SMA(len)當種子，之後才進入遞迴平滑）
+function rma(arr,len){
+ const n=arr.length,out=new Array(n).fill(NaN);
+ const alpha=1/len;let prev=NaN;
+ for(let i=0;i<n;i++){
+  if(isNaN(prev)){
+   if(i>=len-1){let s=0,ok=true;for(let k=i-len+1;k<=i;k++){if(isNaN(arr[k])){ok=false;break}s+=arr[k]}if(ok){out[i]=s/len;prev=out[i]}}
+  }else{out[i]=alpha*arr[i]+(1-alpha)*prev;prev=out[i]}
+ }
+ return out;
+}
+function fixnanInPlace(arr){let last=NaN;for(let i=0;i<arr.length;i++){if(isNaN(arr[i]))arr[i]=last;else last=arr[i]}}
+// DMI/ADX：對齊 Pine ta.dmi(len,len)（DI平滑週期與ADX平滑週期取同一值，與新版指標呼叫方式一致）
+function dmi(h,l,c,len){
+ const n=h.length,plusDM=new Array(n).fill(0),minusDM=new Array(n).fill(0);
+ for(let i=1;i<n;i++){const up=h[i]-h[i-1],down=l[i-1]-l[i];plusDM[i]=(up>down&&up>0)?up:0;minusDM[i]=(down>up&&down>0)?down:0}
+ const tr=trueRange(h,l,c),trur=rma(tr,len),plusSm=rma(plusDM,len),minusSm=rma(minusDM,len);
+ const plus=new Array(n).fill(NaN),minus=new Array(n).fill(NaN);
+ for(let i=0;i<n;i++)if(!isNaN(trur[i])&&trur[i]!==0){plus[i]=!isNaN(plusSm[i])?100*plusSm[i]/trur[i]:NaN;minus[i]=!isNaN(minusSm[i])?100*minusSm[i]/trur[i]:NaN}
+ fixnanInPlace(plus);fixnanInPlace(minus);
+ const dxRaw=plus.map((p,i)=>{const s=p+minus[i];return Math.abs(p-minus[i])/(s===0?1:s)});
+ const adx=rma(dxRaw,len).map(x=>isNaN(x)?NaN:100*x);
+ return{plus,minus,adx,tr};
 }
 // 態別K棒配色：p up(態1/2/3/4)=綠系，p down(態5/6/7/8)=紅系；組內以「可信度」排序決定飽和度上限(鮮豔→混濁)
 // [色相,最大飽和度,亮度]；confirmed=量能達標時取滿飽和度端點，未confirmed則打折(混濁)；RSI偏離中軸帶動漸層位置(it 0~1)
@@ -117,29 +157,30 @@ function stateColor(s,conf,it){
  const[h,satMax,lig]=STCOL[s-1],sat=satMax*(0.35+0.65*Math.min(1,Math.max(0,it)))*(conf?1:0.55);
  return`hsl(${h},${sat.toFixed(0)}%,${lig}%)`;
 }
-function buildCandles(kl,pUpA,oiUpAt,cUpA,rs,volThresh,v){
+function buildCandles(kl,pUpA,oiUpAt,cUpA,rs,dzArr,confirmedArr,volatilityOKArr,trendOKArr){
  const n=kl.length,MAXB=200,start=Math.max(0,n-MAXB),cd=[];
- let curSi=null,curDur=1,ctxAtTransition=0; // ctxAtTransition對應Pine的var：只在轉態那一根重新鎖定，之後同一段持續期間都沿用
+ let curSi=null,curDur=1;
  for(let i=0;i<n;i++){
   const si=st8(pUpA[i],oiUpAt(i),cUpA[i]);
-  const hadPrev=curSi!==null,same=hadPrev&&si===curSi,isTransition=hadPrev&&!same;
+  const same=curSi!==null&&si===curSi;
   curDur=same?curDur+1:1;
-  if(isTransition)ctxAtTransition=ctxOf(si,rs[i]);
   curSi=si;
   if(i<start)continue;
   const ri=rs[i];if(isNaN(ri))continue;
-  const it=Math.abs(fz(ri)-2.5)/2.5;
-  const conf=!isNaN(volThresh)&&v[i]>=volThresh; // baseGate（OI恆有效，對齊Pine useFallbackOI恆開）
+  const it=Math.abs((fz(ri)+dzArr[i])/2-2.5)/2.5; // intensity＝固定區＋動態區blend，對齊Pine zoneBlendBar
+  const conf=confirmedArr[i]; // K棒著色僅看量能達標(volConfirmedBar)，不含波動度濾門，對齊Pine plotBodyColor
   const col=stateColor(si,conf,it);
-  const pendingSig=conf&&isTransition; // Stage1：轉態當根、量能已達標→半透明待確認（單次）
-  const confirmSig=conf&&curDur===CONFIRM_BARS; // Stage2：剛好持續到第N根才顯示（單次，不是整段常亮）
+  const baseGate=conf&&volatilityOKArr[i]; // isconfirmed(恆真)∧oiValid(恆真，靠CVD備援)∧volConfirmed∧volatilityOK
+  const confirmSig=baseGate&&curDur===CONFIRM_BARS; // 單一確認事件：只在剛好持續到第N根時觸發一次，不再有待確認半透明階段
   let mark=null;
-  if((pendingSig||confirmSig)&&ctxAtTransition!==0){
-   const c=ctxAtTransition; // 1=順勢延伸 2=反轉 3=背離，鎖定在轉態當下，不隨後續K棒RSI變動而改變
-   const icon=c===2?(si===1?'↑':'↓'):ST[si-1][0]; // 順勢延伸/背離＝用該態別自己的圖示；反轉＝↑↓
-   const above=c===1?(si===5||si===7):c===2?si===5:(si===2||si===4);
-   const col2=c===3?'#f0b90b':((si===1||si===3)?'#2ebd85':'#f6465d');
-   mark={icon,above,col:col2,pending:pendingSig};
+  if(confirmSig){
+   const c=ctxOf(si,ri); // ★確認當下用「這一根」即時RSI/態別計算，不再沿用轉態瞬間凍結的舊值
+   if(c!==0&&!(c===1&&!trendOKArr[i])){ // 順勢延伸(c==1)訊號需額外通過ADX趨勢強度濾網，未過關則不標記；反轉/背離不需要
+    const icon=c===2?(si===1?'↑':'↓'):ST[si-1][0];
+    const above=c===1?(si===5||si===7):c===2?si===5:(si===2||si===4);
+    const col2=c===3?'#f0b90b':((si===1||si===3)?'#2ebd85':'#f6465d');
+    mark={icon,above,col:col2};
+   }
   }
   cd.push({time:Math.floor(+kl[i][0]/1000),open:+kl[i][1],high:+kl[i][2],low:+kl[i][3],close:+kl[i][4],color:col,borderColor:col,wickColor:col,mark});
  }
@@ -150,17 +191,18 @@ const bk=s=>s==1||s==3?1:s==5||s==7?-1:0;
 const fz=r=>r<20?0:r<40?1:r<50?2:r<60?3:r<80?4:5;
 const st8=(p,o,c)=>p&&o&&c?1:p&&o&&!c?2:p&&!o&&c?3:p&&!o&&!c?4:!p&&o&&!c?5:!p&&o&&c?6:!p&&!o&&!c?7:8;
 function sticky(raw,thr){let u=true;return raw.map((x,i)=>{if(!isNaN(x)){if(x>thr[i])u=true;else if(x<-thr[i])u=false}return u})}
-// 與 Pine f_marketActionText 完全一致
-function marketAction(hasData,stateScore,rsiMean,dynZoneMean,volumeRate){
+// 與 Pine f_marketActionText 完全一致，含趨勢/波動度濾網門檻：baseFilterOK(近N根波動度確認率≥0.5)、strongFilterOK(再加趨勢強度確認率≥0.5)
+function marketAction(hasData,stateScore,rsiMean,dynZoneMean,volumeRate,trendRate,volatilityRate){
  if(!hasData)return{txt:'資料累積中',cls:'act-neu'};
- if(stateScore>=1.0&&rsiMean>=55&&dynZoneMean>=3&&volumeRate>=0.60)return{txt:'多頭推進',cls:'act-bull'};
- if(stateScore>=0.35&&rsiMean>=50&&dynZoneMean>=2)return{txt:'偏多蓄勢',cls:'act-bull'};
- if(stateScore<=-1.0&&rsiMean<=45&&dynZoneMean<=2&&volumeRate>=0.60)return{txt:'空頭主導',cls:'act-bear'};
- if(stateScore<=-0.35&&rsiMean<=50&&dynZoneMean<=3)return{txt:'偏空壓力',cls:'act-bear'};
+ const baseFilterOK=volatilityRate>=0.5,strongFilterOK=baseFilterOK&&trendRate>=0.5;
+ if(stateScore>=1.0&&rsiMean>=55&&dynZoneMean>=3&&volumeRate>=0.60&&strongFilterOK)return{txt:'多頭推進',cls:'act-bull'};
+ if(stateScore>=0.35&&rsiMean>=50&&dynZoneMean>=2&&baseFilterOK)return{txt:'偏多蓄勢',cls:'act-bull'};
+ if(stateScore<=-1.0&&rsiMean<=45&&dynZoneMean<=2&&volumeRate>=0.60&&strongFilterOK)return{txt:'空頭主導',cls:'act-bear'};
+ if(stateScore<=-0.35&&rsiMean<=50&&dynZoneMean<=3&&baseFilterOK)return{txt:'偏空壓力',cls:'act-bear'};
  return{txt:'多空拉鋸',cls:'act-neu'};
 }
 function analyze(kl,oi,ti){
- const[,rl,sm,nAction]=TFS[ti],c=kl.map(k=>+k[4]),v=kl.map(k=>+k[5]),tb=kl.map(k=>+k[9]),n=c.length;
+ const[,rl,sm,voLen,nAction]=TFS[ti],h=kl.map(k=>+k[2]),l=kl.map(k=>+k[3]),c=kl.map(k=>+k[4]),v=kl.map(k=>+k[5]),tb=kl.map(k=>+k[9]),n=c.length;
  const rs=rsi(c,rl),r=rs[n-1];
  const pUpA=sticky(chg(c),sma(abs(chg(c)),sm));
  const cs=wma(tb.map((x,i)=>2*x-v[i]),sm),cUpA=sticky(cs,sma(abs(cs),sm));
@@ -177,26 +219,36 @@ function analyze(kl,oi,ti){
   const si=st8(pUpA[i],oiUpAt(i),cUpA[i]);
   if(si!==s)break;dur++;
  }
- // 量能：自適應分位數門檻（近200根、70分位）
- const volThresh=percentileNearestRank(v.slice(-VOL_LOOKBACK),VOL_PERCENTILE);
- const cd=buildCandles(kl,pUpA,oiUpAt,cUpA,rs,volThresh,v);
- const conf=!isNaN(volThresh)&&v[n-1]>=volThresh;
- const ok=conf&&dur>=CONFIRM_BARS;
- const w=rs.filter(x=>!isNaN(x)).slice(-200).sort((a,b)=>a-b),p=q=>w.length?w[Math.max(0,Math.min(Math.ceil(q/100*w.length)-1,w.length-1))]:50;
- const dzOf=ri=>ri<=p(10)?0:ri<=p(25)?1:ri<=p(50)?2:ri<=p(75)?3:ri<=p(90)?4:5;
- const dz=dzOf(r);
- // 綜合判讀：最近N根（各週期不同，對齊 Pine f_priceActionN）加權平均
+ // 量能門檻：逐根滾動分位數（對齊 Pine ta.percentile_nearest_rank 每根即時重算，而非整段共用單一門檻）
+ const volThreshArr=rollingPercentileNearestRank(v,LOOKBACK,VOL_PERCENTILE);
+ const confirmedArr=v.map((x,i)=>!isNaN(volThreshArr[i])&&x>=volThreshArr[i]);
+ // ADX 趨勢強度濾網：週期採用該時間框架的RSI長度(adxLenAuto預設對齊rsiLen)
+ const adx=dmi(h,l,c,rl).adx;
+ const adxThreshArr=rollingPercentileNearestRank(adx,LOOKBACK,ADX_PERCENTILE);
+ const trendOKArr=adx.map((x,i)=>!isNaN(x)&&!isNaN(adxThreshArr[i])&&x>=adxThreshArr[i]);
+ // ATR 波動度濾網：週期採用該時間框架的量能長度(atrLenAuto預設對齊volLen)
+ const atr=rma(trueRange(h,l,c),voLen);
+ const atrThreshArr=rollingPercentileNearestRank(atr,LOOKBACK,ATR_PERCENTILE);
+ const volatilityOKArr=atr.map((x,i)=>!isNaN(x)&&!isNaN(atrThreshArr[i])&&x>=atrThreshArr[i]);
+ // 動態RSI六區：逐根滾動分位數（對齊 Pine f_dynZone 每根即時重算五個分位邊界）
+ const p10Arr=rollingPercentileNearestRank(rs,LOOKBACK,10),p25Arr=rollingPercentileNearestRank(rs,LOOKBACK,25),p50Arr=rollingPercentileNearestRank(rs,LOOKBACK,50),p75Arr=rollingPercentileNearestRank(rs,LOOKBACK,75),p90Arr=rollingPercentileNearestRank(rs,LOOKBACK,90);
+ const dzArr=rs.map((ri,i)=>isNaN(ri)?2:ri<=p10Arr[i]?0:ri<=p25Arr[i]?1:ri<=p50Arr[i]?2:ri<=p75Arr[i]?3:ri<=p90Arr[i]?4:5);
+ const dz=dzArr[n-1];
+ const cd=buildCandles(kl,pUpA,oiUpAt,cUpA,rs,dzArr,confirmedArr,volatilityOKArr,trendOKArr);
+ // 「已確認」＝量能達標＋波動度濾網通過＋同態別已持續≥N根，三者同時成立才算，對齊Pine confirmed定義
+ const ok=confirmedArr[n-1]&&volatilityOKArr[n-1]&&dur>=CONFIRM_BARS;
+ // 綜合判讀：最近N根（各週期不同，對齊 Pine f_priceActionN）加權平均，含趨勢/波動度確認率
  const start=Math.max(0,n-nAction);
- let scoreSum=0,rsiSum=0,dzSum=0,volSum=0,cn=0;
+ let scoreSum=0,rsiSum=0,dzSum=0,volSum=0,trendSum=0,volaSum=0,cn=0;
  for(let i=start;i<n;i++){
   const ri=rs[i];if(isNaN(ri))continue;
   const si=st8(pUpA[i],oiUpAt(i),cUpA[i]);
-  scoreSum+=SCORE[si-1];rsiSum+=ri;dzSum+=dzOf(ri);
-  volSum+=(!isNaN(volThresh)&&v[i]>=volThresh)?1:0;cn++;
+  scoreSum+=SCORE[si-1];rsiSum+=ri;dzSum+=dzArr[i];
+  volSum+=confirmedArr[i]?1:0;trendSum+=trendOKArr[i]?1:0;volaSum+=volatilityOKArr[i]?1:0;cn++;
  }
  const hasData=cn>=nAction;
- const act=marketAction(hasData,hasData?scoreSum/cn:NaN,hasData?rsiSum/cn:NaN,hasData?Math.round(dzSum/cn):2,hasData?volSum/cn:NaN);
- return{s,r,ov,conf,ok,fz:fz(r),dz,ctx:ctxOf(s,r),tf:TFS[ti][0],dur,action:act.txt,actionCls:act.cls,cd};
+ const act=marketAction(hasData,hasData?scoreSum/cn:NaN,hasData?rsiSum/cn:NaN,hasData?Math.round(dzSum/cn):2,hasData?volSum/cn:NaN,hasData?trendSum/cn:0,hasData?volaSum/cn:0);
+ return{s,r,ov,conf:confirmedArr[n-1],ok,fz:fz(r),dz,ctx:ctxOf(s,r),tf:TFS[ti][0],dur,action:act.txt,actionCls:act.cls,cd};
 }
 // ---- 取資料 ----
 async function j(u){const r=await fetch(B+u);if(!r.ok)throw new Error(r.status);return r.json()}
@@ -277,11 +329,12 @@ function getYZoom(sym,tfIdx){let z=chartYZoom.get(sym);if(!z||(tfIdx!=null&&z.tf
 function clampView(v,len){v.n=Math.max(10,Math.min(len,Math.round(v.n)));v.off=Math.max(0,Math.min(len-v.n,Math.round(v.off)))}
 function getView(sym,tfIdx,len){let v=chartView.get(sym);if(!v||v.tfIdx!==tfIdx){v={n:len,off:0,tfIdx};chartView.set(sym,v)}clampView(v,len);return v}
 // 判斷拖曳起點落在哪個區域：右側價格軸／底部時間軸／主圖區，供軸區獨立縮放使用
+// 邊界往軸區方向各留一段寬容緩衝（Y軸10px／X軸6px），避免貼著最後一根K棒或圖表底邊拖曳平移時被誤判成縮放
 function axisRegionAt(canvas,clientX,clientY){
  const L=canvas._layout;if(!L)return'plot';
  const rect=canvas.getBoundingClientRect(),x=clientX-rect.left,yy=clientY-rect.top;
- if(x>=L.padL+L.plotW)return'yaxis';
- if(yy>=L.padT+L.plotH)return'xaxis';
+ if(x>=L.padL+L.plotW+10)return'yaxis';
+ if(yy>=L.padT+L.plotH+6)return'xaxis';
  return'plot';
 }
 // 手勢：主圖區＝兩指縮放、單指拖曳平移（手機）／按住拖曳平移、滾輪縮放（桌機）；
