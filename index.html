@@ -224,28 +224,35 @@ function detRow(a){const b=bk(a.s),col=b==1?'var(--bull)':b==-1?'var(--bear)':'v
  const act=`<span class="${a.actionCls||'act-neu'}">${a.action||'—'}</span>`;
  return`<tr><td>${a.tf}</td><td>${ic} ${lb}</td><td>${zn}</td><td>${vt}</td><td>${cx}</td><td>${act}</td></tr>`}
 function detTable(t){return`<div class="dwrap"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>分區</th><th>量能</th><th>情境</th><th>綜合判讀</th></tr></thead><tbody>${t.map(detRow).join('')}</tbody></table></div>`}
-function chartBlock(sym){return`<div class="cwrap" data-sym="${sym}"><div class="cchips">${TFS.map((tf,i)=>`<button class="chip cf" data-i="${i}" aria-pressed="${i==1}">${tf[0]}</button>`).join('')}</div><div class="cchart" id="ck_${sym}"></div></div>`}
+function chartBlock(sym){return`<div class="cwrap" data-sym="${sym}"><div class="cchips">${TFS.map((tf,i)=>`<button class="chip cf" data-i="${i}" aria-pressed="${i==1}">${tf[0]}</button>`).join('')}</div><div class="cchart" id="ck_${sym}">［容器已建立，等待繪圖］</div></div>`}
 let charts=new Map();
 function paintChart(sym,tfIdx){
- const r=rows.get(sym);if(!r||!r.t)return;
- const el=document.getElementById('ck_'+sym);if(!el)return;
- if(typeof LightweightCharts=='undefined'){el.textContent='圖表函式庫載入失敗（請檢查網路連線）';return}
+ const el=document.getElementById('ck_'+sym);
+ const r=rows.get(sym);
+ if(!el)return; // 容器都找不到，代表這一列目前沒展開，屬正常情況
+ if(!r||!r.t){el.textContent='［除錯］找不到該幣別的態別資料（rows/r.t 尚未就緒）';return}
+ if(typeof LightweightCharts=='undefined'){el.textContent='［除錯］LightweightCharts 函式庫未載入（網路被擋或CDN失敗）';return}
  let inst=charts.get(sym);
  if(tfIdx==null)tfIdx=inst?inst.tfIdx:1;
  const cd=r.t[tfIdx]&&r.t[tfIdx].cd;
- if(!cd||!cd.length){el.textContent='暫無K線資料';return}
+ if(!cd||!cd.length){el.textContent=`［除錯］該週期(${TFS[tfIdx][0]})沒有K棒資料 (cd=${JSON.stringify(cd&&cd.slice(0,1))})`;return}
  try{
   if(inst&&inst.chartEl===el){
    inst.tfIdx=tfIdx;inst.series.setData(cd);inst.chart.timeScale().fitContent();
   }else{
-   el.innerHTML='';el.textContent='';
+   el.innerHTML='';
+   const w=el.clientWidth||300;
    const tx=getComputedStyle(document.body).color;
-   const chart=LightweightCharts.createChart(el,{width:el.clientWidth||300,height:220,layout:{background:{color:'transparent'},textColor:tx},grid:{vertLines:{color:'rgba(139,149,163,.15)'},horzLines:{color:'rgba(139,149,163,.15)'}},timeScale:{timeVisible:true,secondsVisible:false,borderVisible:false},rightPriceScale:{borderVisible:false}});
+   const chart=LightweightCharts.createChart(el,{width:w,height:220,layout:{background:{color:'transparent'},textColor:tx},grid:{vertLines:{color:'rgba(139,149,163,.15)'},horzLines:{color:'rgba(139,149,163,.15)'}},timeScale:{timeVisible:true,secondsVisible:false,borderVisible:false},rightPriceScale:{borderVisible:false}});
    const series=chart.addCandlestickSeries({borderVisible:false,wickVisible:true,upColor:'#2ebd85',downColor:'#f6465d',wickUpColor:'#2ebd85',wickDownColor:'#f6465d'});
    series.setData(cd);chart.timeScale().fitContent();
    charts.set(sym,{chart,series,tfIdx,chartEl:el});
+   const dbg=document.createElement('div');
+   dbg.style.cssText='font-size:10px;color:var(--mu);margin-top:2px';
+   dbg.textContent=`［除錯］已繪製 ${cd.length} 根K棒，容器寬 ${w}px，LWC版本 ${LightweightCharts.version?LightweightCharts.version():'?'}`;
+   el.parentElement.appendChild(dbg);
   }
- }catch(e){el.textContent='圖表繪製錯誤：'+e.message}
+ }catch(e){el.textContent='［除錯］圖表繪製錯誤：'+e.message}
 }
 function render(){
  let a=[...rows.values()].filter(r=>r.t&&pass[S.flt](r));
