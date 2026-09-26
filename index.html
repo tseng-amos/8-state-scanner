@@ -314,14 +314,14 @@ function drawCandles(canvas,cd){
   const yO=y(c.open),yC=y(c.close),top=Math.min(yO,yC),h=Math.max(1,Math.abs(yC-yO));
   ctx.fillStyle=c.color;ctx.fillRect(cx-bw/2,top,bw,h);
  });
- if(slot>=7){ // 疊加反轉/背離標記；根數太密（縮太小）時不畫，避免文字互相重疊
-  ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-  cd.forEach((c,i)=>{
-   if(!c.mark)return;
-   const cx=padL+slot*i+slot/2,my=c.mark.above?y(c.high)-7:y(c.low)+7;
-   ctx.fillStyle=c.mark.col;ctx.fillText(c.mark.icon,cx,my);
-  });
- }
+ // 疊加反轉/背離標記：任何縮放層級都至少畫個小圓點，根夠寬時才疊上完整圖示文字（避免縮太小時文字互相重疊）
+ cd.forEach((c,i)=>{
+  if(!c.mark)return;
+  const cx=padL+slot*i+slot/2,my=c.mark.above?y(c.high)-7:y(c.low)+7;
+  ctx.fillStyle=c.mark.col;
+  if(slot>=7){ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(c.mark.icon,cx,my)}
+  else{ctx.beginPath();ctx.arc(cx,my,1.8,0,Math.PI*2);ctx.fill()}
+ });
  return true;
 }
 function paintChart(sym,tfIdx){
@@ -342,7 +342,8 @@ function paintChart(sym,tfIdx){
   if(!ok){el.textContent='［除錯］無法取得繪圖範圍（資料異常）';return}
   let dbg=el.parentElement.querySelector('.cdbg');
   if(!dbg){dbg=document.createElement('div');dbg.className='cdbg';dbg.style.cssText='font-size:10px;color:var(--mu);margin-top:2px';el.parentElement.appendChild(dbg)}
-  dbg.textContent=`顯示 ${slice.length}/${cd.length} 根K棒｜可兩指縮放、單指拖曳、雙擊重置`;
+  const mk=slice.filter(c=>c.mark).length,mkAll=cd.filter(c=>c.mark).length;
+  dbg.textContent=`顯示 ${slice.length}/${cd.length} 根K棒｜標記 ${mk}個(全部${mkAll}個)｜可兩指縮放、單指拖曳、雙擊重置`;
  }catch(e){el.textContent='［除錯］圖表繪製錯誤：'+e.message}
 }
 function render(){
