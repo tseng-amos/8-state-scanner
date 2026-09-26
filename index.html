@@ -321,7 +321,7 @@ function detRow(a){const b=bk(a.s),col=b==1?'var(--bull)':b==-1?'var(--bear)':'v
  const act=`<span class="${a.actionCls||'act-neu'}">${a.action||'—'}</span>`;
  return`<tr><td>${a.tf}</td><td>${ic} ${lb}</td><td>${zn}</td><td>${vt}</td><td>${cx}</td><td>${act}</td></tr>`}
 function detTable(t){return`<div class="dwrap"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>分區</th><th>量能</th><th>情境</th><th>綜合判讀</th></tr></thead><tbody>${t.map(detRow).join('')}</tbody></table></div>`}
-function chartBlock(sym){const tfIdx=chartTf.get(sym)??1;return`<div class="cwrap" data-sym="${sym}"><div class="cchips">${TFS.map((tf,i)=>`<button class="chip cf" data-i="${i}" aria-pressed="${i==tfIdx}">${tf[0]}</button>`).join('')}</div><div class="cchart" id="ck_${sym}"></div></div>`}
+function chartBlock(sym){const tfIdx=chartTf.get(sym)??1;return`<div class="cwrap" data-sym="${sym}"><div class="cchips">${TFS.map((tf,i)=>`<button class="chip cf" data-i="${i}" aria-pressed="${i==tfIdx}">${tf[0]}</button>`).join('')}<button class="chip crst" title="價格/時間軸若被拖到看不到想看的K棒，按此鍵一次恢復預設範圍">⤺重置縮放</button></div><div class="cchart" id="ck_${sym}"></div></div>`}
 let chartTf=new Map();
 let chartView=new Map(); // sym -> {n,off,tfIdx}：n=目前可見根數（縮放），off=可見區間右緣距離最新那根的偏移根數（平移）
 let chartYZoom=new Map(); // sym -> {mult,tfIdx}：價格軸獨立縮放倍率，1=預設自動貼合範圍，切換週期時重置
@@ -344,6 +344,7 @@ function bindChartGestures(canvas,sym){
  const dist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
  const curCtx=()=>{const tfIdx=chartTf.get(sym)??1,r=rows.get(sym),cd=r&&r.t&&r.t[tfIdx]&&r.t[tfIdx].cd;if(!cd||!cd.length)return null;return{cd,v:getView(sym,tfIdx,cd.length),yz:getYZoom(sym,tfIdx)}};
  const clampMult=m=>Math.max(0.15,Math.min(6,m));
+ const dz=(d,dead=6)=>Math.sign(d)*Math.max(0,Math.abs(d)-dead); // 死區：|d|<=dead時視為0，避免貼邊誤觸時縮放悄悄漂移
  const startSess=(touches,c,region)=>{
   if(touches.length>=2){sess.mode='pinch';sess.pinch=true;sess.d0=dist(touches[0],touches[1]);sess.n0=c.v.n;sess.off0=c.v.off;sess.len=c.cd.length}
   else if(region==='yaxis'){sess.mode='yaxis';sess.y0=touches[0].clientY;sess.mult0=c.yz.mult}
@@ -360,11 +361,11 @@ function bindChartGestures(canvas,sym){
   }else if(sess.mode=='yaxis'&&e.touches.length==1){
    const dy=e.touches[0].clientY-sess.y0;
    if(Math.abs(dy)>4)sess.moved=true;
-   c.yz.mult=clampMult(sess.mult0*Math.exp(dy*0.006));
+   c.yz.mult=clampMult(sess.mult0*Math.exp(dz(dy)*0.006));
   }else if(sess.mode=='xaxis'&&e.touches.length==1){
    const dx=e.touches[0].clientX-sess.x0;
    if(Math.abs(dx)>4)sess.moved=true;
-   c.v.n=sess.n0*Math.exp(dx*0.006);c.v.off=sess.off0;clampView(c.v,sess.len);
+   c.v.n=sess.n0*Math.exp(dz(dx)*0.006);c.v.off=sess.off0;clampView(c.v,sess.len);
   }else if(sess.mode=='pan'&&e.touches.length==1){
    const dx=e.touches[0].clientX-sess.x0;
    if(Math.abs(dx)>8)sess.moved=true;
@@ -396,8 +397,8 @@ function bindChartGestures(canvas,sym){
   const c=curCtx();
   if(mDrag){
    if(!c)return;
-   if(mDrag.mode==='yaxis'){const dy=e.clientY-mDrag.y0;c.yz.mult=clampMult(mDrag.mult0*Math.exp(dy*0.006))}
-   else if(mDrag.mode==='xaxis'){const dx=e.clientX-mDrag.x0;c.v.n=mDrag.n0*Math.exp(dx*0.006);c.v.off=mDrag.off0;clampView(c.v,mDrag.len)}
+   if(mDrag.mode==='yaxis'){const dy=e.clientY-mDrag.y0;c.yz.mult=clampMult(mDrag.mult0*Math.exp(dz(dy)*0.006))}
+   else if(mDrag.mode==='xaxis'){const dx=e.clientX-mDrag.x0;c.v.n=mDrag.n0*Math.exp(dz(dx)*0.006);c.v.off=mDrag.off0;clampView(c.v,mDrag.len)}
    else{const dx=e.clientX-mDrag.x0,barW=canvas.clientWidth/mDrag.n;c.v.off=mDrag.off0+dx/barW;clampView(c.v,mDrag.len)}
    paintChart(sym);
   }else if(c){
@@ -555,6 +556,8 @@ $('#list').addEventListener('click',e=>{
  if(pinBtn){e.stopPropagation();const sym=pinBtn.dataset.pin;if(pins.has(sym))pins.delete(sym);else pins.add(sym);S.pins=[...pins];save();render();return}
  const cf=e.target.closest('.cf');
  if(cf){e.stopPropagation();const wrap=cf.closest('.cwrap');wrap.querySelectorAll('.cf').forEach(b=>b.setAttribute('aria-pressed',b===cf?'true':'false'));paintChart(wrap.dataset.sym,+cf.dataset.i);return}
+ const crst=e.target.closest('.crst');
+ if(crst){e.stopPropagation();const wrap=crst.closest('.cwrap'),sym=wrap.dataset.sym,tfIdx=chartTf.get(sym)??1,r=rows.get(sym),cd=r&&r.t&&r.t[tfIdx]&&r.t[tfIdx].cd;if(cd&&cd.length){const v=getView(sym,tfIdx,cd.length);v.n=cd.length;v.off=0;getYZoom(sym,tfIdx).mult=1;paintChart(sym,tfIdx)}return}
  if(e.target.closest('.cwrap'))return;
  const r=e.target.closest('.row');if(!r)return;const s=r.dataset.s;
  if(open.has(s))open.delete(s);else{open.clear();open.add(s)} // 同時只展開一列，避免畫面越開越長
