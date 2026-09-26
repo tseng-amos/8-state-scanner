@@ -229,35 +229,50 @@ let chartTf=new Map();
 let chartView=new Map(); // sym -> {n,off,tfIdx}：n=目前可見根數（縮放），off=可見區間右緣距離最新那根的偏移根數（平移）
 function clampView(v,len){v.n=Math.max(10,Math.min(len,Math.round(v.n)));v.off=Math.max(0,Math.min(len-v.n,Math.round(v.off)))}
 function getView(sym,tfIdx,len){let v=chartView.get(sym);if(!v||v.tfIdx!==tfIdx){v={n:len,off:0,tfIdx};chartView.set(sym,v)}clampView(v,len);return v}
-// 手勢：雙指縮放、單指拖曳平移、雙擊重置縮放；每個canvas只綁定一次
+// 手勢：雙指縮放、單指拖曳平移、雙擊重置縮放（手機）；按住拖曳平移、滾輪縮放、雙擊重置（桌機）。每個canvas只綁定一次
 function bindChartGestures(canvas,sym){
- let g=null;
+ let sess=null,lastTap=0,mDrag=null;
  const dist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
  const curCtx=()=>{const tfIdx=chartTf.get(sym)??1,r=rows.get(sym),cd=r&&r.t&&r.t[tfIdx]&&r.t[tfIdx].cd;if(!cd||!cd.length)return null;return{cd,v:getView(sym,tfIdx,cd.length)}};
- canvas.addEventListener('touchstart',e=>{
-  const c=curCtx();if(!c)return;
-  if(e.touches.length>=2)g={mode:'pinch',d0:dist(e.touches[0],e.touches[1]),n0:c.v.n,off0:c.v.off,len:c.cd.length};
-  else g={mode:'pan',x0:e.touches[0].clientX,off0:c.v.off,n:c.v.n,len:c.cd.length};
- },{passive:true});
+ const startSess=(touches,c)=>{
+  if(touches.length>=2){sess.mode='pinch';sess.pinch=true;sess.d0=dist(touches[0],touches[1]);sess.n0=c.v.n;sess.off0=c.v.off;sess.len=c.cd.length}
+  else{sess.mode='pan';sess.x0=touches[0].clientX;sess.off0=c.v.off;sess.n=c.v.n;sess.len=c.cd.length}
+ };
+ canvas.addEventListener('touchstart',e=>{const c=curCtx();if(!c)return;if(!sess)sess={moved:false,pinch:false};startSess(e.touches,c)},{passive:true});
  canvas.addEventListener('touchmove',e=>{
-  if(!g)return;const c=curCtx();if(!c)return;e.preventDefault();
-  if(g.mode=='pinch'&&e.touches.length>=2){
+  if(!sess)return;const c=curCtx();if(!c)return;e.preventDefault();
+  if(sess.mode=='pinch'&&e.touches.length>=2){
    const d=dist(e.touches[0],e.touches[1]);
-   c.v.n=g.n0*(g.d0/Math.max(1,d));c.v.off=g.off0;clampView(c.v,g.len);
-  }else if(g.mode=='pan'&&e.touches.length==1){
-   const dx=e.touches[0].clientX-g.x0,barW=canvas.clientWidth/g.n;
-   c.v.off=g.off0+dx/barW;clampView(c.v,g.len);
+   if(Math.abs(d-sess.d0)>3)sess.moved=true;
+   c.v.n=sess.n0*(sess.d0/Math.max(1,d));c.v.off=sess.off0;clampView(c.v,sess.len);
+  }else if(sess.mode=='pan'&&e.touches.length==1){
+   const dx=e.touches[0].clientX-sess.x0;
+   if(Math.abs(dx)>8)sess.moved=true;
+   const barW=canvas.clientWidth/sess.n;c.v.off=sess.off0+dx/barW;clampView(c.v,sess.len);
   }
   paintChart(sym);
  },{passive:false});
- const clearG=()=>g=null;
- canvas.addEventListener('touchend',clearG);canvas.addEventListener('touchcancel',clearG);
- let lastTap=0;
- canvas.addEventListener('touchend',()=>{const t=Date.now();if(t-lastTap<300){const c=curCtx();if(c){c.v.n=c.cd.length;c.v.off=0;paintChart(sym)}}lastTap=t});
+ canvas.addEventListener('touchend',e=>{
+  const c=curCtx();
+  if(e.touches.length>0){if(sess&&c)startSess(e.touches,c);return} // 還有手指按著：沿用同一個session（保留pinch/moved記錄）重新起算基準
+  const wasTap=sess&&!sess.pinch&&!sess.moved;
+  sess=null;
+  if(wasTap){const t=Date.now();if(t-lastTap<300&&c){c.v.n=c.cd.length;c.v.off=0;paintChart(sym)}lastTap=t}
+ });
+ canvas.addEventListener('touchcancel',()=>{sess=null});
+ canvas.style.cursor='grab';
+ canvas.addEventListener('mousedown',e=>{const c=curCtx();if(!c)return;mDrag={x0:e.clientX,off0:c.v.off,n:c.v.n,len:c.cd.length};canvas.style.cursor='grabbing'});
+ canvas.addEventListener('mousemove',e=>{
+  if(!mDrag)return;const c=curCtx();if(!c)return;
+  const dx=e.clientX-mDrag.x0,barW=canvas.clientWidth/mDrag.n;
+  c.v.off=mDrag.off0+dx/barW;clampView(c.v,mDrag.len);paintChart(sym);
+ });
+ ['mouseup','mouseleave'].forEach(ev=>canvas.addEventListener(ev,()=>{mDrag=null;canvas.style.cursor='grab'}));
+ canvas.addEventListener('dblclick',()=>{const c=curCtx();if(c){c.v.n=c.cd.length;c.v.off=0;paintChart(sym)}});
  canvas.addEventListener('wheel',e=>{
   const c=curCtx();if(!c)return;e.preventDefault();
-  if(Math.abs(e.deltaY)>=Math.abs(e.deltaX)){c.v.n*=e.deltaY>0?1.15:1/1.15;clampView(c.v,c.cd.length)}
-  else{const barW=canvas.clientWidth/c.v.n;c.v.off+=e.deltaX/barW;clampView(c.v,c.cd.length)}
+  if(e.deltaX&&Math.abs(e.deltaX)>Math.abs(e.deltaY)){const barW=canvas.clientWidth/c.v.n;c.v.off+=e.deltaX/barW;clampView(c.v,c.cd.length)}
+  else{c.v.n*=e.deltaY>0?1.15:1/1.15;clampView(c.v,c.cd.length)}
   paintChart(sym);
  },{passive:false});
 }
