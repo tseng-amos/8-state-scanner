@@ -63,7 +63,8 @@ footer{color:var(--mu);font-size:12px;margin:14px 0 6px;line-height:1.7}
 </style></head><body><div class="w">
 <div class="top"><h1>8態掃描器 · 幣安永續</h1><div><span id="st">準備中…</span><span id="cd"></span></div></div>
 <div class="bar">
- <span class="chip" id="volb" style="cursor:default">24h成交額≥2000萬U</span>
+ <input id="q" type="search" placeholder="搜尋幣種，如 BTC" style="width:140px" autocomplete="off">
+ <span class="chip" id="volb" style="cursor:default">24h成交額前50名</span>
  <select id="ref"><option value="30">每30秒</option><option value="60">每60秒</option><option value="0">手動</option></select>
  <select id="srt"><option value="score">綜合分數優先</option><option value="rank">依成交額</option></select>
  <button class="chip" id="go">立即掃描</button>
@@ -91,7 +92,7 @@ const FZ=['極低','低位','偏弱','偏強','高位','極高'],DZ=['D極低','
 const FLT=[['all','全部'],['bull','多頭共振≥3'],['bear','空頭共振≥3']];
 // f_stateScore：態1..8，背離建倉(態2/6)反向計分，平倉態(態4/8)降低不歸零
 const SCORE=[2,-1,1,-.5,-2,1,-1,.5];
-let S={ref:'0',flt:'all',srt:'score',actTf:'any',act:'all'};
+let S={ref:'0',flt:'all',srt:'score',actTf:'any',act:'all',q:''};
 const TFIDX=Object.fromEntries(TFS.map((t,i)=>[t[0],i]));
 try{Object.assign(S,JSON.parse(localStorage.getItem('s8')||'{}'))}catch(e){}
 const save=()=>{try{localStorage.setItem('s8',JSON.stringify(S))}catch(e){}};
@@ -423,6 +424,7 @@ function paintChart(sym,tfIdx){
 function render(){
  let a=[...rows.values()].filter(r=>r.t&&pass[S.flt](r));
  if(S.act!=='all')a=a.filter(r=>S.actTf==='any'?r.t.some(x=>x.action===S.act):(r.t[TFIDX[S.actTf]]&&r.t[TFIDX[S.actTf]].action===S.act));
+ if(S.q&&S.q.trim()){const q=S.q.trim().toUpperCase();a=a.filter(r=>r.sym.toUpperCase().includes(q))}
  if(S.srt=='score')a.sort((x,y)=>compScore(y)-compScore(x));else a.sort((x,y)=>x.rk-y.rk);
  const okSet=new Set(a.map(r=>r.sym));
  [...open].forEach(s=>{if(!okSet.has(s))open.delete(s)}); // 掉出前50名或被目前篩選條件排除時，一併收起展開狀態，避免之後又符合條件時無聲重新展開
@@ -455,10 +457,11 @@ $('#list').addEventListener('click',e=>{
 });
 function ui(){
  $('#volb').textContent=`24h成交額前${TOP_N}名`;
- $('#ref').value=S.ref;$('#srt').value=S.srt;$('#actTf').value=S.actTf;$('#act').value=S.act;
+ $('#ref').value=S.ref;$('#srt').value=S.srt;$('#actTf').value=S.actTf;$('#act').value=S.act;$('#q').value=S.q||'';
  $('#flt').innerHTML=FLT.map(f=>`<button class="chip" data-f="${f[0]}" aria-pressed="${S.flt==f[0]}">${f[1]}</button>`).join('');
 }
 $('#ref').onchange=e=>{S.ref=e.target.value;save();clearTimeout(timer);if(+S.ref&&!busy){timer=setTimeout(scan,S.ref*1e3);nextScanAt=Date.now()+S.ref*1e3}else nextScanAt=0};
+$('#q').oninput=e=>{S.q=e.target.value;save();render()};
 $('#srt').onchange=e=>{S.srt=e.target.value;save();render()};
 $('#actTf').onchange=e=>{S.actTf=e.target.value;save();render()};
 $('#act').onchange=e=>{S.act=e.target.value;save();render()};
