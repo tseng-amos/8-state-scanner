@@ -183,8 +183,9 @@ async function scan(){
     const t=await Promise.all(TFS.map(async(tf,i)=>{const[kl,oi]=await Promise.all([j(`/fapi/v1/klines?symbol=${x.symbol}&interval=${tf[0]}&limit=300`),getOI(x.symbol,tf[0])]);return analyze(kl,oi,i)}));
     t.forEach((a,i)=>{a.chg=!!(o.t&&o.t[i].s!=a.s)});o.t=t;
    }catch(e){fail++;if(String(e.message).match(/418|429/)){throw e}}
-   done++;setSt(`掃描中 ${done}/${list.length}`);render();
+   done++;setSt(`掃描中 ${done}/${list.length}`);renderThrottled();
   });
+  render();
   setSt(`已更新 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜${rows.size}檔${fail?`｜${fail}檔失敗`:''}`);
  }catch(e){
   const m=String(e.message);
@@ -240,6 +241,7 @@ function paintChart(sym,tfIdx){
   if(inst&&inst.chartEl===el){
    inst.tfIdx=tfIdx;inst.series.setData(cd);inst.chart.timeScale().fitContent();
   }else{
+   if(inst){try{inst.chart.remove()}catch(e){}charts.delete(sym)} // 舊容器已被整批render()換掉，先釋放舊chart避免canvas/GPU context洩漏（手機瀏覽器有上限，超過會靜默畫不出來）
    el.innerHTML='';
    const w=el.clientWidth||300;
    const tx=getComputedStyle(document.body).color;
@@ -263,6 +265,8 @@ function render(){
  document.querySelectorAll('.row').forEach(e=>{if(open.has(e.dataset.s))e.classList.add('open')});
  open.forEach(s=>{if(document.getElementById('ck_'+s))paintChart(s)});
 }
+let lastRender=0;
+const renderThrottled=()=>{const t=Date.now();if(t-lastRender>=400){lastRender=t;render()}};
 const open=new Set();
 $('#list').addEventListener('click',e=>{
  const cf=e.target.closest('.cf');
