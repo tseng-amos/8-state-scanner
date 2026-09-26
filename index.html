@@ -17,6 +17,8 @@ h1{font-size:18px;margin:0;font-weight:700}
 .chip{background:none;border:1px solid var(--ln);border-radius:16px;white-space:nowrap;color:var(--mu);padding:7px 12px;font:inherit;cursor:pointer;background:var(--pn)}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .chip[aria-pressed=true]{color:var(--tx);border-color:var(--ac)}
+.glabel{color:var(--mu);font-size:12px;white-space:nowrap}
+.sep{width:1px;height:22px;background:var(--ln);flex:none}
 select,input{background:var(--pn);color:var(--tx);border:1px solid var(--ln);border-radius:8px;padding:7px 8px;font:inherit}
 button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
 .row{background:var(--pn);border:1px solid var(--ln);border-radius:10px;margin-bottom:8px;padding:8px;display:grid;grid-template-columns:230px repeat(5,1fr);gap:6px;cursor:pointer}
@@ -49,26 +51,34 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .cwrap{margin-top:10px;border-top:1px solid var(--ln);padding-top:8px}
 .cchips{display:flex;gap:6px;margin-bottom:6px}
 .cchips .chip{padding:4px 10px;font-size:12px}
-.cchart{width:100%;height:220px}
+.cchart{width:100%;height:220px;position:relative}
+.ctip{position:absolute;pointer-events:none;background:var(--pn);border:1px solid var(--ln);border-radius:6px;padding:4px 7px;font-size:11px;line-height:1.5;white-space:nowrap;color:var(--tx);display:none;z-index:5}
+.pin{background:none;border:none;color:var(--mu);cursor:pointer;font-size:15px;padding:0 2px;line-height:1;flex:none}
+.pin[aria-pressed=true]{color:var(--ac)}
+.stale{color:var(--ac);font-size:11px}
+#cd{color:var(--mu);font-size:11px}
 footer{color:var(--mu);font-size:12px;margin:14px 0 6px;line-height:1.7}
 @media(max-width:720px){.row{grid-template-columns:repeat(5,1fr);gap:5px}.sym{grid-column:1/-1;flex-direction:row;align-items:center;gap:8px;flex-wrap:wrap}.sym .l2{flex-basis:100%;order:3}.c{grid-template-columns:1fr;padding:4px 5px;justify-items:start}.c em{grid-row:auto;font-size:18px}}
+@media(max-width:480px){.top{flex-direction:column;align-items:flex-start;gap:2px}h1{font-size:15px}}
 </style></head><body><div class="w">
-<div class="top"><h1>8態掃描器 · 幣安永續</h1><div id="st">準備中…</div></div>
+<div class="top"><h1>8態掃描器 · 幣安永續</h1><div><span id="st">準備中…</span><span id="cd"></span></div></div>
 <div class="bar">
  <span class="chip" id="volb" style="cursor:default">24h成交額≥2000萬U</span>
  <select id="ref"><option value="30">每30秒</option><option value="60">每60秒</option><option value="0">手動</option></select>
  <select id="srt"><option value="score">綜合分數優先</option><option value="rank">依成交額</option></select>
  <button class="chip" id="go">立即掃描</button>
 </div>
-<div class="chips" id="flt"></div>
-<div class="bar">
- <span class="chip" style="cursor:default">綜合判讀篩選</span>
+<div class="bar" id="fltbar">
+ <span class="glabel">態別共振</span>
+ <div class="chips" id="flt"></div>
+ <span class="sep"></span>
+ <span class="glabel">綜合判讀</span>
  <select id="actTf"><option value="any">任一週期</option><option value="5m">5m</option><option value="15m">15m</option><option value="1h">1h</option><option value="4h">4h</option><option value="1d">1d</option></select>
  <select id="act"><option value="all">全部判讀</option><option value="多頭推進">多頭推進</option><option value="偏多蓄勢">偏多蓄勢</option><option value="多空拉鋸">多空拉鋸</option><option value="偏空壓力">偏空壓力</option><option value="空頭主導">空頭主導</option><option value="資料累積中">資料累積中</option></select>
 </div>
 <div style="height:10px"></div>
 <div id="list"><div class="empty">載入中…</div></div>
-<footer>每格：態別符號｜RSI｜週期。底色愈深＝RSI愈極端（固定區與動態區平均）。左側色條＝已確認；右上黃點＝該週期態別較上次掃描改變；點擊列可看完整說明。<br>週期涵蓋 1D／4H／1H／15M／5M 共5個。「已確認」＝量能達標（量≥近200根量能70分位）＋同態別已持續≥3根，兩者同時成立才算，未確認時反轉/背離不顯示、分數打對折。<br>「綜合判讀」＝各週期最近N根（1D:12／4H:15／1H:18／15M:20／5M:24）的態別分數、RSI、動態分區、量能確認率加權後產出，與指標儀表板一致。<br>▲▼建倉 △▽平倉 ↑↓反轉 ◆◇背離。CVD 使用幣安主動買量計算（非近似）。OI 優先採幣安 USDT 本位持倉量；單一交易所若暫時取不到，改以 CVD 方向近似替代並標示[C]（不再退化為4態，對齊指標「OI失效時仍以CVD估算維持8態」的設計）。資料為推定分類，非交易建議。<br>展開列後方可切換週期查看K線圖，K棒顏色＝該根態別（價漲組綠系／價跌組紅系，組內飽和度依態別可信度排序），越鮮豔代表該根量能已達標，越混濁代表未達標；顏色深淺同時受RSI偏離中軸幅度影響。</footer>
+<footer>每格：態別符號｜RSI｜週期。底色愈深＝RSI愈極端（固定區與動態區平均）。左側色條＝已確認；右上黃點＝該週期態別較上次掃描改變；點擊列可看完整說明。<br>週期涵蓋 1D／4H／1H／15M／5M 共5個。「已確認」＝量能達標（量≥近200根量能70分位）＋同態別已持續≥3根，兩者同時成立才算，未確認時反轉/背離不顯示、分數打對折。<br>「綜合判讀」＝各週期最近N根（1D:12／4H:15／1H:18／15M:20／5M:24）的態別分數、RSI、動態分區、量能確認率加權後產出，與指標儀表板一致。<br>▲▼建倉 △▽平倉 ↑↓反轉 ◆◇背離。CVD 使用幣安主動買量計算（非近似）。OI 優先採幣安 USDT 本位持倉量；單一交易所若暫時取不到，改以 CVD 方向近似替代並標示[C]（不再退化為4態，對齊指標「OI失效時仍以CVD估算維持8態」的設計）。資料為推定分類，非交易建議。<br>展開列後方可切換週期查看K線圖，K棒顏色＝該根態別（價漲組綠系／價跌組紅系，組內飽和度依態別可信度排序），越鮮豔代表該根量能已達標，越混濁代表未達標；顏色深淺同時受RSI偏離中軸幅度影響。<br>圖表右側為價格刻度、底部為時間刻度；滑鼠移動或手指點按K棒可顯示該根實際OHLC數值與時間。點列名前的☆可釘選常盯合約，釘選後固定顯示在列表最上方。合約若因暫時觸發交易所限速而沿用舊資料，會在名稱旁標示「⚠資料可能過期」。</footer>
 </div>
 <script>
 const B='https://fapi.binance.com',$=s=>document.querySelector(s);
@@ -86,6 +96,7 @@ const TFIDX=Object.fromEntries(TFS.map((t,i)=>[t[0],i]));
 try{Object.assign(S,JSON.parse(localStorage.getItem('s8')||'{}'))}catch(e){}
 const save=()=>{try{localStorage.setItem('s8',JSON.stringify(S))}catch(e){}};
 let rows=new Map(),busy=false,timer=0,oiC={};
+let pins=new Set(S.pins||[]),rowCache=new Map(),rateLimited=false,nextScanAt=0;
 // ---- 指標運算 ----
 const sma=(a,n)=>a.map((_,i)=>i<n-1?NaN:a.slice(i-n+1,i+1).reduce((x,y)=>x+y,0)/n);
 const wma=(a,n)=>{const d=n*(n+1)/2;return a.map((_,i)=>{if(i<n-1)return NaN;let s=0;for(let k=0;k<n;k++)s+=a[i-n+1+k]*(k+1);return s/d})};
@@ -189,22 +200,30 @@ async function scan(){
   const list=tk.slice(0,TOP_N); // 僅保留24h成交額排名前N的合約，清單大小固定，不受全市場成交量整體漲縮影響
   const keep=new Map();
   list.forEach(x=>{const o=rows.get(x.symbol)||{};keep.set(x.symbol,{...o,sym:x.symbol,px:+x.lastPrice,ch:+x.priceChangePercent,qv:+x.quoteVolume,rk:x.rk})});
-  rows=keep;render();let done=0,fail=0;
+  rows=keep;render();let done=0,fail=0;rateLimited=false;
   await pool(list,8,async x=>{
    const o=rows.get(x.symbol);
+   if(rateLimited){ // 已有合約觸發幣安限速：尚未處理的合約直接跳過本輪fetch、沿用舊資料，避免持續發request加重限速
+    o.stale=true;o.ver=(o.ver||0)+1;fail++;done++;setSt(`掃描中 ${done}/${list.length}（已達限速，剩餘合約沿用舊資料）`);renderThrottled();return;
+   }
    try{
     const t=await Promise.all(TFS.map(async(tf,i)=>{const[kl,oi]=await Promise.all([j(`/fapi/v1/klines?symbol=${x.symbol}&interval=${tf[0]}&limit=300`),getOI(x.symbol,tf[0])]);return analyze(kl,oi,i)}));
-    t.forEach((a,i)=>{a.chg=!!(o.t&&o.t[i].s!=a.s)});o.t=t;
-   }catch(e){fail++;if(String(e.message).match(/418|429/)){throw e}}
-   done++;setSt(`掃描中 ${done}/${list.length}`);renderThrottled();
+    t.forEach((a,i)=>{a.chg=!!(o.t&&o.t[i].s!=a.s)});o.t=t;o.stale=false;
+   }catch(e){
+    fail++;o.stale=true;
+    if(String(e.message).match(/418|429/))rateLimited=true; // 該檔踩到限速：只中止該檔本輪更新，不拋出中止整個pool
+   }
+   o.ver=(o.ver||0)+1;done++;setSt(`掃描中 ${done}/${list.length}`);renderThrottled();
   });
   render();
-  setSt(`已更新 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜${rows.size}檔${fail?`｜${fail}檔失敗`:''}`);
+  setSt(`已更新 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜${rows.size}檔${fail?`｜${fail}檔失敗`:''}${rateLimited?'｜已達幣安限速，部分合約沿用舊資料':''}`);
  }catch(e){
   const m=String(e.message);
   setSt(m.match(/451|403/)?'幣安拒絕連線（地區限制），請換網路或使用 VPN':m.match(/418|429/)?'請求過於頻繁，請稍候再掃描':'連線失敗：'+m,1);
  }
- busy=false;if(+S.ref)timer=setTimeout(()=>{document.hidden?(timer=setTimeout(scan,5e3)):scan()},S.ref*1e3);
+ busy=false;
+ if(+S.ref){nextScanAt=Date.now()+S.ref*1e3;timer=setTimeout(()=>{document.hidden?(nextScanAt=Date.now()+5e3,timer=setTimeout(scan,5e3)):scan()},S.ref*1e3)}
+ else nextScanAt=0;
 }
 // ---- 畫面 ----
 const fq=q=>q>=1e9?(q/1e9).toFixed(2)+'B':q>=1e6?(q/1e6).toFixed(1)+'M':(q/1e3).toFixed(0)+'K';
@@ -269,22 +288,32 @@ function bindChartGestures(canvas,sym){
  canvas.addEventListener('touchend',e=>{
   const c=curCtx();
   if(e.touches.length>0){if(sess&&c)startSess(e.touches,c);return} // 還有手指按著：沿用同一個session（保留pinch/moved記錄）重新起算基準
-  const wasTap=sess&&!sess.pinch&&!sess.moved;
+  const wasTap=sess&&!sess.pinch&&!sess.moved,tp=e.changedTouches&&e.changedTouches[0];
   sess=null;
-  if(wasTap){const t=Date.now();if(t-lastTap<300&&c){c.v.n=c.cd.length;c.v.off=0;paintChart(sym)}lastTap=t}
+  if(wasTap){
+   const t=Date.now();
+   if(t-lastTap<300&&c){c.v.n=c.cd.length;c.v.off=0;paintChart(sym);hideCrosshair(canvas)}
+   else if(c&&tp){drawCrosshair(canvas,sym,tp.clientX,tp.clientY)}
+   lastTap=t;
+  }
  });
  canvas.addEventListener('touchcancel',()=>{sess=null});
  canvas.style.cursor='grab';
  canvas.addEventListener('mousedown',e=>{const c=curCtx();if(!c)return;mDrag={x0:e.clientX,off0:c.v.off,n:c.v.n,len:c.cd.length};canvas.style.cursor='grabbing'});
  canvas.addEventListener('mousemove',e=>{
-  if(!mDrag)return;const c=curCtx();if(!c)return;
-  const dx=e.clientX-mDrag.x0,barW=canvas.clientWidth/mDrag.n;
-  c.v.off=mDrag.off0+dx/barW;clampView(c.v,mDrag.len);paintChart(sym);
+  const c=curCtx();
+  if(mDrag){
+   if(!c)return;
+   const dx=e.clientX-mDrag.x0,barW=canvas.clientWidth/mDrag.n;
+   c.v.off=mDrag.off0+dx/barW;clampView(c.v,mDrag.len);paintChart(sym);
+  }else if(c){
+   drawCrosshair(canvas,sym,e.clientX,e.clientY);
+  }
  });
- ['mouseup','mouseleave'].forEach(ev=>canvas.addEventListener(ev,()=>{mDrag=null;canvas.style.cursor='grab'}));
- canvas.addEventListener('dblclick',()=>{const c=curCtx();if(c){c.v.n=c.cd.length;c.v.off=0;paintChart(sym)}});
+ ['mouseup','mouseleave'].forEach(ev=>canvas.addEventListener(ev,()=>{mDrag=null;canvas.style.cursor='grab';if(ev==='mouseleave')hideCrosshair(canvas)}));
+ canvas.addEventListener('dblclick',()=>{const c=curCtx();if(c){c.v.n=c.cd.length;c.v.off=0;paintChart(sym);hideCrosshair(canvas)}});
  canvas.addEventListener('wheel',e=>{
-  const c=curCtx();if(!c)return;e.preventDefault();
+  const c=curCtx();if(!c)return;e.preventDefault();hideCrosshair(canvas);
   if(e.deltaX&&Math.abs(e.deltaX)>Math.abs(e.deltaY)){const barW=canvas.clientWidth/c.v.n;c.v.off+=e.deltaX/barW;clampView(c.v,c.cd.length)}
   else{c.v.n*=e.deltaY>0?1.15:1/1.15;clampView(c.v,c.cd.length)}
   paintChart(sym);
@@ -304,9 +333,28 @@ function drawCandles(canvas,cd){
  if(!isFinite(lo)||!isFinite(hi))return false;
  if(lo===hi){lo-=1;hi+=1}
  const pad=(hi-lo)*0.08;lo-=pad;hi+=pad;
- const padL=2,padR=2,padT=13,padB=13,plotW=cssW-padL-padR,plotH=cssH-padT-padB,n=cd.length,slot=plotW/n;
+ const cs=getComputedStyle(canvas),muCol=cs.getPropertyValue('--mu').trim()||'#8b95a3',lnCol=cs.getPropertyValue('--ln').trim()||'#252c36';
+ // padR/padB留給右側價格刻度與底部時間刻度文字
+ const padL=2,padR=46,padT=13,padB=16,plotW=cssW-padL-padR,plotH=cssH-padT-padB,n=cd.length,slot=plotW/n;
  const bw=Math.max(1,Math.min(slot*0.7,10));
  const y=v=>padT+plotH-(v-lo)/(hi-lo)*plotH;
+ // 價格刻度：5條等分格線＋右側文字
+ ctx.font='10px -apple-system,sans-serif';ctx.textBaseline='middle';ctx.textAlign='left';
+ const GRID_N=5;
+ for(let g=0;g<=GRID_N;g++){
+  const v=lo+(hi-lo)*g/GRID_N,yy=y(v);
+  ctx.strokeStyle=lnCol;ctx.globalAlpha=.6;ctx.beginPath();ctx.moveTo(padL,yy);ctx.lineTo(padL+plotW,yy);ctx.stroke();ctx.globalAlpha=1;
+  ctx.fillStyle=muCol;ctx.fillText(fp(v),padL+plotW+4,yy);
+ }
+ // 時間刻度：依可視根數挑最多4個等距標籤
+ const TIME_N=Math.min(4,n);
+ ctx.textBaseline='alphabetic';ctx.textAlign='center';
+ for(let k=0;k<TIME_N;k++){
+  const i=Math.round(k*(n-1)/Math.max(1,TIME_N-1)),d=new Date(cd[i].time*1000);
+  const cx=padL+slot*i+slot/2;
+  ctx.fillStyle=muCol;
+  ctx.fillText(`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`,cx,cssH-3);
+ }
  cd.forEach((c,i)=>{
   const cx=padL+slot*i+slot/2;
   ctx.strokeStyle=c.wickColor||c.color;ctx.lineWidth=1;
@@ -322,7 +370,33 @@ function drawCandles(canvas,cd){
   if(slot>=7){ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(c.mark.icon,cx,my)}
   else{ctx.beginPath();ctx.arc(cx,my,1.8,0,Math.PI*2);ctx.fill()}
  });
+ canvas._layout={padL,padR,padT,padB,plotW,plotH,slot,lo,hi,cssW,cssH,cd}; // 供十字準星查詢座標換算
  return true;
+}
+// 十字準星：滑鼠移動／單擊查詢最近K棒的實際OHLC數值與時間
+function drawCrosshair(canvas,sym,clientX,clientY){
+ const L=canvas._layout;if(!L)return;
+ const rect=canvas.getBoundingClientRect(),x=clientX-rect.left,yPix=clientY-rect.top;
+ if(x<L.padL||x>L.padL+L.plotW||yPix<0||yPix>L.cssH){hideCrosshair(canvas);return}
+ let i=Math.round((x-L.padL)/L.slot-0.5);i=Math.max(0,Math.min(L.cd.length-1,i));
+ const c=L.cd[i];
+ drawCandles(canvas,L.cd); // 先重繪乾淨畫面，避免上次十字線殘留
+ const ctx=canvas.getContext('2d'),cx=L.padL+L.slot*i+L.slot/2;
+ ctx.save();ctx.strokeStyle='rgba(139,149,163,.65)';ctx.setLineDash([3,3]);ctx.lineWidth=1;
+ ctx.beginPath();ctx.moveTo(cx,L.padT);ctx.lineTo(cx,L.padT+L.plotH);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(L.padL,yPix);ctx.lineTo(L.padL+L.plotW,yPix);ctx.stroke();
+ ctx.restore();
+ let tip=canvas.parentElement.querySelector('.ctip');
+ if(!tip){tip=document.createElement('div');tip.className='ctip';canvas.parentElement.appendChild(tip)}
+ const d=new Date(c.time*1000);
+ tip.innerHTML=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}<br>O ${fp(c.open)}　H ${fp(c.high)}<br>L ${fp(c.low)}　C ${fp(c.close)}`;
+ tip.style.display='block';
+ let left=cx+8;if(left+112>L.cssW)left=cx-120;
+ tip.style.left=left+'px';tip.style.top=Math.max(0,Math.min(L.cssH-58,yPix+8))+'px';
+}
+function hideCrosshair(canvas){
+ const tip=canvas.parentElement.querySelector('.ctip');if(tip)tip.style.display='none';
+ if(canvas._layout)drawCandles(canvas,canvas._layout.cd);
 }
 function paintChart(sym,tfIdx){
  const el=document.getElementById('ck_'+sym);
@@ -343,16 +417,25 @@ function paintChart(sym,tfIdx){
   let dbg=el.parentElement.querySelector('.cdbg');
   if(!dbg){dbg=document.createElement('div');dbg.className='cdbg';dbg.style.cssText='font-size:10px;color:var(--mu);margin-top:2px';el.parentElement.appendChild(dbg)}
   const mk=slice.filter(c=>c.mark).length,mkAll=cd.filter(c=>c.mark).length;
-  dbg.textContent=`顯示 ${slice.length}/${cd.length} 根K棒｜標記 ${mk}個(全部${mkAll}個)｜可兩指縮放、單指拖曳、雙擊重置`;
+  dbg.textContent=`顯示 ${slice.length}/${cd.length} 根K棒｜標記 ${mk}個(全部${mkAll}個)｜可兩指縮放、單指拖曳、雙擊重置、移動/點按查詢OHLC`;
  }catch(e){el.textContent='［除錯］圖表繪製錯誤：'+e.message}
 }
 function render(){
  let a=[...rows.values()].filter(r=>r.t&&pass[S.flt](r));
  if(S.act!=='all')a=a.filter(r=>S.actTf==='any'?r.t.some(x=>x.action===S.act):(r.t[TFIDX[S.actTf]]&&r.t[TFIDX[S.actTf]].action===S.act));
  if(S.srt=='score')a.sort((x,y)=>compScore(y)-compScore(x));else a.sort((x,y)=>x.rk-y.rk);
+ const okSet=new Set(a.map(r=>r.sym));
+ [...open].forEach(s=>{if(!okSet.has(s))open.delete(s)}); // 掉出前50名或被目前篩選條件排除時，一併收起展開狀態，避免之後又符合條件時無聲重新展開
+ a.sort((x,y)=>(pins.has(y.sym)?1:0)-(pins.has(x.sym)?1:0)); // 釘選的合約固定置頂，組內仍維持原本排序（stable sort）
  const pend=[...rows.values()].filter(r=>!r.t).length;
- $('#list').innerHTML=a.map(r=>{const cs=compScore(r),bu=cnt(r,x=>bk(x.s)==1),be=cnt(r,x=>bk(x.s)==-1);
-  return`<div class="row" data-s="${r.sym}"><div class="sym"><div class="l1"><b>${r.sym.replace('USDT','')}</b><i>#${r.rk}</i><span class="sum ${cs>0?'up':cs<0?'dn':''}">${cs>0?'+':''}${cs}分 ${scoreLabel(cs)}｜多${bu} 空${be}</span></div><div class="l2">${fp(r.px)} <span class="${r.ch>=0?'up':'dn'}">${r.ch>=0?'+':''}${r.ch.toFixed(2)}%</span> · ${fq(r.qv)}</div></div>${r.t.map(cell).join('')}<div class="det">${detTable(r.t)}${chartBlock(r.sym)}</div></div>`}).join('')||`<div class="empty">${pend?'掃描中…':'沒有符合條件的合約'}</div>`;
+ $('#list').innerHTML=a.map(r=>{
+  const isOpen=open.has(r.sym),isPinned=pins.has(r.sym),c=rowCache.get(r.sym);
+  if(c&&c.ver===r.ver&&c.isOpen===isOpen&&c.isPinned===isPinned)return c.html; // 未變動的列直接沿用快取的HTML字串，避免每次render都整包重繪
+  const cs=compScore(r),bu=cnt(r,x=>bk(x.s)==1),be=cnt(r,x=>bk(x.s)==-1);
+  const html=`<div class="row" data-s="${r.sym}"><div class="sym"><div class="l1"><button class="pin" data-pin="${r.sym}" aria-pressed="${isPinned}" title="釘選">${isPinned?'★':'☆'}</button><b>${r.sym.replace('USDT','')}</b><i>#${r.rk}</i>${r.stale?'<span class="stale">⚠資料可能過期</span>':''}<span class="sum ${cs>0?'up':cs<0?'dn':''}">${cs>0?'+':''}${cs}分 ${scoreLabel(cs)}｜多${bu} 空${be}</span></div><div class="l2">${fp(r.px)} <span class="${r.ch>=0?'up':'dn'}">${r.ch>=0?'+':''}${r.ch.toFixed(2)}%</span> · ${fq(r.qv)}</div></div>${r.t.map(cell).join('')}<div class="det">${isOpen?detTable(r.t)+chartBlock(r.sym):''}</div></div>`;
+  rowCache.set(r.sym,{ver:r.ver,isOpen,isPinned,html});
+  return html;
+ }).join('')||`<div class="empty">${pend?'掃描中…':'沒有符合條件的合約'}</div>`;
  document.querySelectorAll('.row').forEach(e=>{if(open.has(e.dataset.s))e.classList.add('open')});
  open.forEach(s=>{if(document.getElementById('ck_'+s))paintChart(s)});
 }
@@ -360,28 +443,31 @@ let lastRender=0;
 const renderThrottled=()=>{const t=Date.now();if(t-lastRender>=400){lastRender=t;render()}};
 const open=new Set();
 $('#list').addEventListener('click',e=>{
+ const pinBtn=e.target.closest('.pin');
+ if(pinBtn){e.stopPropagation();const sym=pinBtn.dataset.pin;if(pins.has(sym))pins.delete(sym);else pins.add(sym);S.pins=[...pins];save();render();return}
  const cf=e.target.closest('.cf');
  if(cf){e.stopPropagation();const wrap=cf.closest('.cwrap');wrap.querySelectorAll('.cf').forEach(b=>b.setAttribute('aria-pressed',b===cf?'true':'false'));paintChart(wrap.dataset.sym,+cf.dataset.i);return}
  if(e.target.closest('.cwrap'))return;
  const r=e.target.closest('.row');if(!r)return;const s=r.dataset.s;
- if(open.has(s)){
-  open.delete(s);r.classList.remove('open');
- }else{
-  open.forEach(o=>{if(o!==s){const or=document.querySelector(`.row[data-s="${o}"]`);if(or)or.classList.remove('open')}}); // 關掉其他已展開的列，避免畫面越開越長
-  open.clear();open.add(s);r.classList.add('open');
-  requestAnimationFrame(()=>paintChart(s));
- }
+ if(open.has(s))open.delete(s);else{open.clear();open.add(s)} // 同時只展開一列，避免畫面越開越長
+ render(); // 展開/收合會影響.det是否輸出明細與圖表容器，重新render換出正確內容
+ if(open.has(s))requestAnimationFrame(()=>paintChart(s));
 });
 function ui(){
  $('#volb').textContent=`24h成交額前${TOP_N}名`;
  $('#ref').value=S.ref;$('#srt').value=S.srt;$('#actTf').value=S.actTf;$('#act').value=S.act;
  $('#flt').innerHTML=FLT.map(f=>`<button class="chip" data-f="${f[0]}" aria-pressed="${S.flt==f[0]}">${f[1]}</button>`).join('');
 }
-$('#ref').onchange=e=>{S.ref=e.target.value;save();clearTimeout(timer);if(+S.ref&&!busy)timer=setTimeout(scan,S.ref*1e3)};
+$('#ref').onchange=e=>{S.ref=e.target.value;save();clearTimeout(timer);if(+S.ref&&!busy){timer=setTimeout(scan,S.ref*1e3);nextScanAt=Date.now()+S.ref*1e3}else nextScanAt=0};
 $('#srt').onchange=e=>{S.srt=e.target.value;save();render()};
 $('#actTf').onchange=e=>{S.actTf=e.target.value;save();render()};
 $('#act').onchange=e=>{S.act=e.target.value;save();render()};
 $('#flt').onclick=e=>{const f=e.target.dataset.f;if(!f)return;S.flt=f;save();ui();render()};
 $('#go').onclick=scan;
 ui();scan();
+setInterval(()=>{
+ const el=$('#cd');if(!el)return;
+ if(busy||!nextScanAt||!(+S.ref)){el.textContent='';return}
+ el.textContent=`（${Math.max(0,Math.ceil((nextScanAt-Date.now())/1000))}s後更新）`;
+},1000);
 </script></body></html>
