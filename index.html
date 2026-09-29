@@ -73,13 +73,13 @@ footer{color:var(--mu);font-size:12px;margin:14px 0 6px;line-height:1.7}
  <span class="glabel">態別共振</span>
  <div class="chips" id="flt"></div>
  <span class="sep"></span>
- <span class="glabel">綜合判讀</span>
+ <span class="glabel">盤面</span>
  <select id="actTf"><option value="any">任一週期</option><option value="5m">5m</option><option value="15m">15m</option><option value="1h">1h</option><option value="4h">4h</option><option value="1d">1d</option></select>
  <select id="act"><option value="all">全部判讀</option><option value="多頭推進">多頭推進</option><option value="偏多蓄勢">偏多蓄勢</option><option value="多空拉鋸">多空拉鋸</option><option value="偏空壓力">偏空壓力</option><option value="空頭主導">空頭主導</option><option value="資料累積中">資料累積中</option></select>
 </div>
 <div style="height:10px"></div>
 <div id="list"><div class="empty">載入中…</div></div>
-<footer>每格：態別符號｜RSI｜週期，小字為訊號標籤（反彈/築底/延續/警示/輕倉空/出貨）；底色愈深＝RSI愈極端；左側色條＝已確認；黃點＝較上次掃描改變。點列可看完整說明。<br>週期涵蓋 1D／4H／1H／15M／5M，樣本視窗與確認根數皆依週期分開設定。「已確認」＝量能達標＋波動度濾網通過＋同態別持續夠久，三者皆成立才算；未確認時解讀顯示「－」。<br>「解讀」把8態分成四組判讀：反彈組(態5/7,RSI&lt;40)找超跌反彈；築底組(態6/8,RSI20-50)找低位吸籌(已升級為獨立買訊)；延續組(態1/3,RSI20-50)為低位真延續，若爆量則改標「疑似出貨」，另有RSI50-60時的低權重「輕倉空」訊號；警示組(態2/4)恆為風控警示、不當進場訊號。「綜合判讀」為近N根加權後的多空傾向，空方權重刻意調低。<br>CVD 用主動買量計算；OI 優先採幣安持倉量，取不到時以CVD方向近似並標示[C]。資料為推定分類，非交易建議。<br>展開列可切換週期看K線圖：滑鼠/點按查OHLC，圖表區可上下左右拖曳平移(K棒跟著手指走，縮放後被切到畫面外的部分也拖得回來)，拖曳價格軸/時間軸可各自縮放，雙擊重置；卡住時也可按圖表上方「⤺重置縮放」一鍵恢復。☆可釘選合約置頂；「⚠資料可能過期」表示該合約暫時受限速影響沿用舊資料。</footer>
+<footer>每格：態別符號｜RSI｜週期，小字為訊號標籤（反彈/築底/延續/輕倉空/出貨，警示組不上圖、只在展開列的「訊號」欄提示）；底色愈深＝RSI愈極端；左側色條＝已確認；黃點＝較上次掃描改變。點列可看完整說明。<br>週期涵蓋 1D／4H／1H／15M／5M，樣本視窗與確認根數皆依週期分開設定。「已確認」＝波動度濾網通過＋同態別持續夠久（不要求當根爆量，量能只影響分級與文字），未確認時訊號顯示「－」。<br>「訊號」把8態分成四組判讀：反彈組(態5/7,RSI&lt;40)找超跌反彈；築底組(態6/8,RSI20-50)找低位吸籌(獨立買訊)；延續組(態1/3,RSI20-50)為低位真延續，若爆量則改標「疑似出貨」，另有RSI50-60時的低權重「輕倉空」；警示組(態2/4)恆為風控警示、不當進場訊號。「盤面」為近N根加權後的多空傾向，空方權重刻意調低。<br>K線圖上另有一層淡色機制標記（●建倉／✕止損／◆平減倉），只是描述這根K棒的籌碼行為，屬背景資訊、不是進場訊號，8態都會顯示。<br>CVD 用主動買量計算；OI 優先採幣安持倉量，取不到時以CVD方向近似並標示[C]。資料為推定分類，非交易建議。<br>展開列可切換週期看K線圖：滑鼠/點按查OHLC，拖曳價格軸/時間軸可各自縮放，雙擊重置。☆可釘選合約置頂；「⚠資料可能過期」表示該合約暫時受限速影響沿用舊資料。</footer>
 </div>
 <script>
 const B='https://fapi.binance.com',$=s=>document.querySelector(s);
@@ -170,7 +170,7 @@ function labelText(s,info){
  const{tier,warnType,shortTier,g,sc}=info;
  if(g==4)return s==2?'高位空方加倉警示':'虛弱上漲警示';
  if(warnType==1)return'疑似出貨/派發';
- if(g==1)return tier==2?'超跌爆量反彈':tier==1?'超跌反彈觀察':'';
+ if(g==1)return tier==2?'超跌反彈(量能確認)':tier==1?'超跌反彈觀察':'';
  if(g==2)return tier==2?'低位吸籌築底(強)':tier==1?'低位吸籌築底':'';
  if(tier==1)return sc?'強勢延續(留意出貨)':'低位真延續';
  if(shortTier==1)return'高位轉弱(輕倉空)';
@@ -186,14 +186,24 @@ function tagFor(info){
  if(shortTier==1)return'輕倉空';
  return'';
 }
+// v13：訊號層（機會／風控，K棒周邊）。警示組(態2/4)不再有專屬圖上標記，只在儀表板「訊號」欄以文字呈現。
 function markerFor(s,info){
  const{tier,warnType,shortTier,g}=info;
- if(g==4)return{icon:s==2?'◆':'◇',above:true,col:'#f0b90b'}; // 警示組：純風控，恆顯示
- if(warnType==1)return{icon:'◆',above:true,col:'#f0b90b'}; // 疑似出貨/派發
- if(g==1&&tier>=1)return{icon:'↑',above:false,col:'#2ebd85'}; // 反彈組：一律標多方色(找底/找反彈)
- if(g==2&&tier>=1)return{icon:'●',above:false,col:'#26c6da'}; // 築底組：獨立於警示菱形，青色實心圓
- if(tier==1)return{icon:s==1?'▲':'△',above:false,col:'#2ebd85'}; // 延續組一般延續
- if(shortTier==1)return{icon:'↓',above:true,col:'rgba(246,70,93,.55)'}; // 弱空/輕倉：固定淡色小三角級距
+ if(warnType==1)return{icon:'!',above:true,col:'#FFB300'}; // 疑似出貨/派發
+ if(g==1&&tier>=1)return{icon:'↑',above:false,col:'#00C853'}; // 反彈組
+ if(g==2&&tier>=1)return{icon:'◎',above:false,col:'#26C6DA'}; // 築底組
+ if(tier==1)return{icon:s==1?'▲':'△',above:false,col:'#00C853'}; // 延續組一般延續
+ if(shortTier==1)return{icon:s==1?'▼':'▽',above:true,col:'rgba(255,23,68,.6)'}; // 弱空/輕倉，固定淡色
+ return null;
+}
+// v13新增機制層：描述這根K棒的籌碼行為(建倉/止損/平減倉)，是背景資訊而非進場訊號，永遠獨立於訊號層，8態全覆蓋
+function mechFor(s){
+ if(s==1||s==6)return{icon:'●',bull:true}; // 建倉(多方)
+ if(s==2||s==5)return{icon:'●',bull:false}; // 建倉(空方)
+ if(s==7)return{icon:'✕',bull:true}; // 止損(多方)
+ if(s==3)return{icon:'✕',bull:false}; // 止損(空方)
+ if(s==4)return{icon:'◆',bull:true}; // 平/減倉(多方)
+ if(s==8)return{icon:'◆',bull:false}; // 平/減倉(空方)
  return null;
 }
 // 與 Pine f_marketActionText 完全一致：v10已移除ADX趨勢濾網，只保留波動度確認率門檻(baseFilterOK)
@@ -220,15 +230,17 @@ function buildCandles(kl,pUpA,oiUpAt,cUpA,rs,dzArr,confirmedArr,volatilityOKArr,
   const conf=confirmedArr[i]; // K棒著色仍看量能達標(volConfirmedBar)，對齊Pine plotBodyColor（此段沿用舊版不變）
   const col=stateColor(si,conf,it);
   // ★v10：標記關卡不再要求量能達標(B級訊號可在未爆量時就出現，僅A級才需要)，只需波動度濾網通過
+  // ★v13：標記關卡不再要求量能達標(B級訊號可在未爆量時就出現，僅A級才需要)，只需波動度濾網通過
   const baseGate=volatilityOKArr[i]; // isconfirmed(恆真)∧oiValid(恆真，靠CVD備援)∧volatilityOK
   const confirmSig=baseGate&&curDur===confirmBars; // 單一確認事件：只在剛好持續到第N根(依週期)時觸發一次
-  let mark=null;
+  let sig=null,mech=null;
   if(confirmSig){
    const info=signalInfo(si,fz(ri),conf); // ★確認當下用「這一根」即時RSI區間/量能狀態計算
-   const mk=markerFor(si,info);
-   if(mk)mark=mk;
+   sig=markerFor(si,info);
+   const mf=mechFor(si); // 機制層：8態全覆蓋，與訊號層(RSI有利區濾網)無關，永遠獨立顯示
+   if(mf)mech={icon:mf.icon,col:mf.bull?'rgba(0,200,83,.45)':'rgba(255,23,68,.45)'};
   }
-  cd.push({time:Math.floor(+kl[i][0]/1000),open:+kl[i][1],high:+kl[i][2],low:+kl[i][3],close:+kl[i][4],color:col,borderColor:col,wickColor:col,mark});
+  cd.push({time:Math.floor(+kl[i][0]/1000),open:+kl[i][1],high:+kl[i][2],low:+kl[i][3],close:+kl[i][4],color:col,borderColor:col,wickColor:col,sig,mech});
  }
  return cd;
 }
@@ -262,8 +274,8 @@ function analyze(kl,oi,ti){
  const dzArr=rs.map((ri,i)=>isNaN(ri)?2:ri<=p10Arr[i]?0:ri<=p25Arr[i]?1:ri<=p50Arr[i]?2:ri<=p75Arr[i]?3:ri<=p90Arr[i]?4:5);
  const dz=dzArr[n-1];
  const cd=buildCandles(kl,pUpA,oiUpAt,cUpA,rs,dzArr,confirmedArr,volatilityOKArr,confirmBars);
- // 「已確認」＝量能達標＋波動度濾網通過＋同態別已持續≥N根(依週期)，三者同時成立才算，對齊Pine confirmed定義
- const ok=confirmedArr[n-1]&&volatilityOKArr[n-1]&&dur>=confirmBars;
+ // 「已確認」＝OI有效(恆真，靠CVD備援)＋波動度濾網通過＋同態別已持續≥N根(依週期)；v13起不再額外要求量能達標，量能只影響分級與文字
+ const ok=volatilityOKArr[n-1]&&dur>=confirmBars;
  // 綜合判讀：最近N根（各週期不同，對齊 Pine f_priceActionN）加權平均，含波動度確認率(v10已移除趨勢確認率)
  const start=Math.max(0,n-nAction);
  let scoreSum=0,rsiSum=0,dzSum=0,volSum=0,volaSum=0,cn=0;
@@ -352,14 +364,12 @@ function detRow(a){const b=bk(a.s),col=b==1?'var(--bull)':b==-1?'var(--bear)':'v
  const zn=`F${FZ[a.fz]} ${a.r.toFixed(1)}／${DZ[a.dz]}`;
  const act=`<span class="${a.actionCls||'act-neu'}">${a.action||'—'}</span>`;
  return`<tr><td>${a.tf}</td><td>${ic} ${lb}</td><td>${zn}</td><td>${vt}</td><td>${cx}</td><td>${act}</td></tr>`}
-function detTable(t){return`<div class="dwrap"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>分區</th><th>量能</th><th>解讀</th><th>綜合判讀</th></tr></thead><tbody>${t.map(detRow).join('')}</tbody></table></div>`}
+function detTable(t){return`<div class="dwrap"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>分區</th><th>量能</th><th>訊號</th><th>盤面</th></tr></thead><tbody>${t.map(detRow).join('')}</tbody></table></div>`}
 function chartBlock(sym){const tfIdx=chartTf.get(sym)??1;return`<div class="cwrap" data-sym="${sym}"><div class="cchips">${TFS.map((tf,i)=>`<button class="chip cf" data-i="${i}" aria-pressed="${i==tfIdx}">${tf[0]}</button>`).join('')}<button class="chip crst" title="價格/時間軸若被拖到看不到想看的K棒，按此鍵一次恢復預設範圍">⤺重置縮放</button></div><div class="cchart" id="ck_${sym}"></div></div>`}
 let chartTf=new Map();
 let chartView=new Map(); // sym -> {n,off,tfIdx}：n=目前可見根數（縮放），off=可見區間右緣距離最新那根的偏移根數（平移）
-let chartYZoom=new Map(); // sym -> {mult,offset,tfIdx}：mult=價格軸縮放倍率(1=自動貼合)，offset=價格平移量(單位：自然半幅的倍數，0=置中)
-function getYZoom(sym,tfIdx){let z=chartYZoom.get(sym);if(!z||(tfIdx!=null&&z.tfIdx!==tfIdx)){z={mult:1,offset:0,tfIdx};chartYZoom.set(sym,z)}return z}
-function clampOffset(o){return Math.max(-4,Math.min(4,o))}
-function plotHOf(canvas){return(canvas._layout&&canvas._layout.plotH)||191}
+let chartYZoom=new Map(); // sym -> {mult,tfIdx}：價格軸獨立縮放倍率，1=預設自動貼合範圍，切換週期時重置
+function getYZoom(sym,tfIdx){let z=chartYZoom.get(sym);if(!z||(tfIdx!=null&&z.tfIdx!==tfIdx)){z={mult:1,tfIdx};chartYZoom.set(sym,z)}return z}
 function clampView(v,len){v.n=Math.max(10,Math.min(len,Math.round(v.n)));v.off=Math.max(0,Math.min(len-v.n,Math.round(v.off)))}
 function getView(sym,tfIdx,len){let v=chartView.get(sym);if(!v||v.tfIdx!==tfIdx){v={n:len,off:0,tfIdx};chartView.set(sym,v)}clampView(v,len);return v}
 // 判斷拖曳起點落在哪個區域：右側價格軸／底部時間軸／主圖區，供軸區獨立縮放使用
@@ -383,7 +393,7 @@ function bindChartGestures(canvas,sym){
   if(touches.length>=2){sess.mode='pinch';sess.pinch=true;sess.d0=dist(touches[0],touches[1]);sess.n0=c.v.n;sess.off0=c.v.off;sess.len=c.cd.length}
   else if(region==='yaxis'){sess.mode='yaxis';sess.y0=touches[0].clientY;sess.mult0=c.yz.mult}
   else if(region==='xaxis'){sess.mode='xaxis';sess.x0=touches[0].clientX;sess.n0=c.v.n;sess.off0=c.v.off;sess.len=c.cd.length}
-  else{sess.mode='pan';sess.x0=touches[0].clientX;sess.y0=touches[0].clientY;sess.off0=c.v.off;sess.n=c.v.n;sess.len=c.cd.length;sess.yOff0=c.yz.offset;sess.yMult0=c.yz.mult;sess.plotH0=plotHOf(canvas)}
+  else{sess.mode='pan';sess.x0=touches[0].clientX;sess.off0=c.v.off;sess.n=c.v.n;sess.len=c.cd.length}
  };
  canvas.addEventListener('touchstart',e=>{const c=curCtx();if(!c)return;const region=axisRegionAt(canvas,e.touches[0].clientX,e.touches[0].clientY);if(!sess)sess={moved:false,pinch:false};startSess(e.touches,c,region)},{passive:true});
  canvas.addEventListener('touchmove',e=>{
@@ -401,10 +411,9 @@ function bindChartGestures(canvas,sym){
    if(Math.abs(dx)>4)sess.moved=true;
    c.v.n=sess.n0*Math.exp(dz(dx)*0.006);c.v.off=sess.off0;clampView(c.v,sess.len);
   }else if(sess.mode=='pan'&&e.touches.length==1){
-   const dx=e.touches[0].clientX-sess.x0,dy=e.touches[0].clientY-sess.y0;
-   if(Math.abs(dx)>8||Math.abs(dy)>8)sess.moved=true;
+   const dx=e.touches[0].clientX-sess.x0;
+   if(Math.abs(dx)>8)sess.moved=true;
    const barW=canvas.clientWidth/sess.n;c.v.off=sess.off0+dx/barW;clampView(c.v,sess.len);
-   c.yz.offset=clampOffset(sess.yOff0+dy*2*sess.yMult0/sess.plotH0); // 垂直分量：K棒跟著手指上下移動，露出被縮放切掉的部分
   }
   paintChart(sym);
  },{passive:false});
@@ -416,7 +425,7 @@ function bindChartGestures(canvas,sym){
   sess=null;
   if(wasTap){
    const t=Date.now();
-   if(t-lastTap<300&&c){if(tapRegion==='yaxis'){c.yz.mult=1;c.yz.offset=0}else if(tapRegion==='xaxis'){c.v.n=c.cd.length;c.v.off=0}else{c.v.n=c.cd.length;c.v.off=0;c.yz.mult=1;c.yz.offset=0}paintChart(sym);hideCrosshair(canvas)}
+   if(t-lastTap<300&&c){if(tapRegion==='yaxis')c.yz.mult=1;else if(tapRegion==='xaxis'){c.v.n=c.cd.length;c.v.off=0}else{c.v.n=c.cd.length;c.v.off=0;c.yz.mult=1}paintChart(sym);hideCrosshair(canvas)}
    else if(c&&tp&&tapRegion==='plot'){drawCrosshair(canvas,sym,tp.clientX,tp.clientY)}
    lastTap=t;
   }
@@ -426,7 +435,7 @@ function bindChartGestures(canvas,sym){
  canvas.addEventListener('mousedown',e=>{const c=curCtx();if(!c)return;const region=axisRegionAt(canvas,e.clientX,e.clientY);
   if(region==='yaxis'){mDrag={mode:'yaxis',y0:e.clientY,mult0:c.yz.mult};canvas.style.cursor='ns-resize'}
   else if(region==='xaxis'){mDrag={mode:'xaxis',x0:e.clientX,n0:c.v.n,off0:c.v.off,len:c.cd.length};canvas.style.cursor='ew-resize'}
-  else{mDrag={mode:'pan',x0:e.clientX,y0:e.clientY,off0:c.v.off,n:c.v.n,len:c.cd.length,yOff0:c.yz.offset,yMult0:c.yz.mult,plotH0:plotHOf(canvas)};canvas.style.cursor='grabbing'}
+  else{mDrag={mode:'pan',x0:e.clientX,off0:c.v.off,n:c.v.n,len:c.cd.length};canvas.style.cursor='grabbing'}
  });
  canvas.addEventListener('mousemove',e=>{
   const c=curCtx();
@@ -434,11 +443,7 @@ function bindChartGestures(canvas,sym){
    if(!c)return;
    if(mDrag.mode==='yaxis'){const dy=e.clientY-mDrag.y0;c.yz.mult=clampMult(mDrag.mult0*Math.exp(dz(dy)*0.006))}
    else if(mDrag.mode==='xaxis'){const dx=e.clientX-mDrag.x0;c.v.n=mDrag.n0*Math.exp(dz(dx)*0.006);c.v.off=mDrag.off0;clampView(c.v,mDrag.len)}
-   else{
-    const dx=e.clientX-mDrag.x0,dy=e.clientY-mDrag.y0,barW=canvas.clientWidth/mDrag.n;
-    c.v.off=mDrag.off0+dx/barW;clampView(c.v,mDrag.len);
-    c.yz.offset=clampOffset(mDrag.yOff0+dy*2*mDrag.yMult0/mDrag.plotH0); // 垂直分量：同觸控版，讓被切掉的K棒能上下拖回畫面
-   }
+   else{const dx=e.clientX-mDrag.x0,barW=canvas.clientWidth/mDrag.n;c.v.off=mDrag.off0+dx/barW;clampView(c.v,mDrag.len)}
    paintChart(sym);
   }else if(c){
    const region=axisRegionAt(canvas,e.clientX,e.clientY);
@@ -448,7 +453,7 @@ function bindChartGestures(canvas,sym){
  });
  ['mouseup','mouseleave'].forEach(ev=>canvas.addEventListener(ev,()=>{mDrag=null;canvas.style.cursor='grab';if(ev==='mouseleave')hideCrosshair(canvas)}));
  canvas.addEventListener('dblclick',e=>{const c=curCtx();if(!c)return;const region=axisRegionAt(canvas,e.clientX,e.clientY);
-  if(region==='yaxis'){c.yz.mult=1;c.yz.offset=0}else if(region==='xaxis'){c.v.n=c.cd.length;c.v.off=0}else{c.v.n=c.cd.length;c.v.off=0;c.yz.mult=1;c.yz.offset=0}
+  if(region==='yaxis')c.yz.mult=1;else if(region==='xaxis'){c.v.n=c.cd.length;c.v.off=0}else{c.v.n=c.cd.length;c.v.off=0;c.yz.mult=1}
   paintChart(sym);hideCrosshair(canvas);
  });
  canvas.addEventListener('wheel',e=>{
@@ -474,8 +479,8 @@ function drawCandles(canvas,cd){
  if(!isFinite(lo)||!isFinite(hi))return false;
  if(lo===hi){lo-=1;hi+=1}
  const pad=(hi-lo)*0.08;lo-=pad;hi+=pad;
- const yz=getYZoom(canvas.dataset.sym);
- if(yz.mult!==1||yz.offset){const naturalMid=(lo+hi)/2,naturalHalf=(hi-lo)/2,mid=naturalMid+(yz.offset||0)*naturalHalf,half=naturalHalf*yz.mult;lo=mid-half;hi=mid+half}
+ const yzMult=getYZoom(canvas.dataset.sym).mult;
+ if(yzMult!==1){const mid=(lo+hi)/2,half=(hi-lo)/2*yzMult;lo=mid-half;hi=mid+half}
  const cs=getComputedStyle(canvas),muCol=cs.getPropertyValue('--mu').trim()||'#8b95a3',lnCol=cs.getPropertyValue('--ln').trim()||'#252c36';
  // padR/padB留給右側價格刻度與底部時間刻度文字
  const padL=2,padR=46,padT=13,padB=16,plotW=cssW-padL-padR,plotH=cssH-padT-padB,n=cd.length,slot=plotW/n;
@@ -507,15 +512,23 @@ function drawCandles(canvas,cd){
   const yO=y(c.open),yC=y(c.close),top=Math.min(yO,yC),h=Math.max(1,Math.abs(yC-yO));
   ctx.fillStyle=c.color;ctx.fillRect(cx-bw/2,top,bw,h);
  });
- // 疊加反轉/背離標記：任何縮放層級都至少畫個小圓點，根夠寬時才疊上完整圖示文字（避免縮太小時文字互相重疊）
+ // 疊加標記：機制層(建倉/止損/平減倉，較遠、半透明、8態全覆蓋)在外側，訊號層(反彈/築底/延續/疑似出貨/輕倉空)在內側；任何縮放層級都至少畫個小圓點，根夠寬時才疊上完整圖示文字
  cd.forEach((c,i)=>{
-  if(!c.mark)return;
-  const cx=padL+slot*i+slot/2,my=c.mark.above?y(c.high)-7:y(c.low)+7;
-  ctx.save();if(c.mark.pending)ctx.globalAlpha=0.45;
-  ctx.fillStyle=c.mark.col;
-  if(slot>=7){ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(c.mark.icon,cx,my)}
-  else{ctx.beginPath();ctx.arc(cx,my,1.8,0,Math.PI*2);ctx.fill()}
-  ctx.restore();
+  const cx=padL+slot*i+slot/2;
+  if(c.mech){
+   const my=y(c.high)-14;
+   ctx.save();ctx.fillStyle=c.mech.col;
+   if(slot>=7){ctx.font='9px -apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(c.mech.icon,cx,my)}
+   else{ctx.beginPath();ctx.arc(cx,my,1.4,0,Math.PI*2);ctx.fill()}
+   ctx.restore();
+  }
+  if(c.sig){
+   const my=c.sig.above?y(c.high)-7:y(c.low)+7;
+   ctx.save();ctx.fillStyle=c.sig.col;
+   if(slot>=7){ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(c.sig.icon,cx,my)}
+   else{ctx.beginPath();ctx.arc(cx,my,1.8,0,Math.PI*2);ctx.fill()}
+   ctx.restore();
+  }
  });
  canvas._layout={padL,padR,padT,padB,plotW,plotH,slot,lo,hi,cssW,cssH,cd}; // 供十字準星查詢座標換算
  return true;
@@ -563,7 +576,7 @@ function paintChart(sym,tfIdx){
   if(!ok){el.textContent='［除錯］無法取得繪圖範圍（資料異常）';return}
   let dbg=el.parentElement.querySelector('.cdbg');
   if(!dbg){dbg=document.createElement('div');dbg.className='cdbg';dbg.style.cssText='font-size:10px;color:var(--mu);margin-top:2px';el.parentElement.appendChild(dbg)}
-  const mk=slice.filter(c=>c.mark).length,mkAll=cd.filter(c=>c.mark).length;
+  const mk=slice.filter(c=>c.sig||c.mech).length,mkAll=cd.filter(c=>c.sig||c.mech).length;
   dbg.textContent=`顯示 ${slice.length}/${cd.length} 根K棒｜標記 ${mk}個(全部${mkAll}個)｜可兩指縮放、單指拖曳、拖拉右側/底部座標軸個別縮放價格/時間、雙擊重置、移動/點按查詢OHLC`;
  }catch(e){el.textContent='［除錯］圖表繪製錯誤：'+e.message}
 }
@@ -596,7 +609,7 @@ $('#list').addEventListener('click',e=>{
  const cf=e.target.closest('.cf');
  if(cf){e.stopPropagation();const wrap=cf.closest('.cwrap');wrap.querySelectorAll('.cf').forEach(b=>b.setAttribute('aria-pressed',b===cf?'true':'false'));paintChart(wrap.dataset.sym,+cf.dataset.i);return}
  const crst=e.target.closest('.crst');
- if(crst){e.stopPropagation();const wrap=crst.closest('.cwrap'),sym=wrap.dataset.sym,tfIdx=chartTf.get(sym)??1,r=rows.get(sym),cd=r&&r.t&&r.t[tfIdx]&&r.t[tfIdx].cd;if(cd&&cd.length){const v=getView(sym,tfIdx,cd.length);v.n=cd.length;v.off=0;const yz=getYZoom(sym,tfIdx);yz.mult=1;yz.offset=0;paintChart(sym,tfIdx)}return}
+ if(crst){e.stopPropagation();const wrap=crst.closest('.cwrap'),sym=wrap.dataset.sym,tfIdx=chartTf.get(sym)??1,r=rows.get(sym),cd=r&&r.t&&r.t[tfIdx]&&r.t[tfIdx].cd;if(cd&&cd.length){const v=getView(sym,tfIdx,cd.length);v.n=cd.length;v.off=0;getYZoom(sym,tfIdx).mult=1;paintChart(sym,tfIdx)}return}
  if(e.target.closest('.cwrap'))return;
  const r=e.target.closest('.row');if(!r)return;const s=r.dataset.s;
  if(open.has(s))open.delete(s);else{open.clear();open.add(s)} // 同時只展開一列，避免畫面越開越長
