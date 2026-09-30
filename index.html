@@ -79,7 +79,7 @@ footer{color:var(--mu);font-size:12px;margin:14px 0 6px;line-height:1.7}
 </div>
 <div style="height:10px"></div>
 <div id="list"><div class="empty">載入中…</div></div>
-<footer>每格：態別符號｜RSI｜週期，小字為訊號標籤（反彈/築底/延續/輕倉空/出貨，警示組不上圖、只在展開列的「訊號」欄提示）；底色愈深＝RSI愈極端；左側色條＝已確認；黃點＝較上次掃描改變。點列可看完整說明。<br>週期涵蓋 1D／4H／1H／15M／5M，樣本視窗與確認根數皆依週期分開設定。「已確認」＝波動度濾網通過＋同態別持續夠久（不要求當根爆量，量能只影響分級與文字），未確認時訊號顯示「－」。<br>「訊號」把8態分成四組判讀：反彈組(態5/7,RSI&lt;40)找超跌反彈；築底組(態6/8,RSI20-50)找低位吸籌(獨立買訊)；延續組(態1/3,RSI20-50)為低位真延續，若爆量則改標「疑似出貨」，另有RSI50-60時的低權重「輕倉空」；警示組(態2/4)恆為風控警示、不當進場訊號。「盤面」為近N根加權後的多空傾向，空方權重刻意調低。<br>K線圖上另有一層淡色機制標記（●建倉／✕止損／◆平減倉），只是描述這根K棒的籌碼行為，屬背景資訊、不是進場訊號，8態都會顯示。<br>CVD 用主動買量計算；OI 優先採幣安持倉量，取不到時以CVD方向近似並標示[C]。資料為推定分類，非交易建議。<br>展開列可切換週期看K線圖：滑鼠/點按查OHLC，拖曳價格軸/時間軸可各自縮放，雙擊重置。☆可釘選合約置頂；「⚠資料可能過期」表示該合約暫時受限速影響沿用舊資料。</footer>
+<footer>每格：態別符號｜RSI｜週期，小字為訊號標籤（反彈/築底/延續/輕倉空/出貨，警示組態2/4不當訊號）；底色愈深＝RSI愈極端；左側色條＝已確認；黃點＝較上次掃描改變。點列可看完整說明。<br>週期涵蓋 1D／4H／1H／15M／5M，RSI六區邊界依週期獨立（5M/15M/1H＝20/40/50/60/80；4H/1D＝25.5/41.8/50/58.2/74.5，為縮放先驗）；圖上訊號為邊緣觸發（條件由假變真才標）；樣本視窗與確認根數皆依週期分開設定。「已確認」＝波動度濾網通過＋同態別持續夠久（不要求當根爆量，量能只影響分級與文字），未確認時訊號顯示「－」。<br>「訊號」把8態分成四組判讀：反彈組(態5/7,RSI&lt;40)找超跌反彈；築底組(態6/8,RSI20-50)找低位吸籌(獨立買訊)；延續組(態1/3,RSI20-50)為低位真延續，若爆量則改標「疑似出貨」，另有RSI50-60時的低權重「輕倉空」；警示組(態2/4)不當訊號，僅影響K棒著色與盤面分數。「盤面」為近N根多空對稱平均分（態1/3/6/8=+2/+1/+1/+0.5，鏡像態為負），RSI門檻依各週期邊界推得。<br>K線圖上另有一層淡色機制標記（●建倉／✕止損／◆平減倉），為背景資訊、不是進場訊號，僅在真實OI下顯示（[C]估算時不標）。<br>CVD 用主動買量計算；OI 優先採幣安持倉量，取不到時以CVD方向近似並標示[C]。資料為推定分類，非交易建議。<br>展開列可切換週期看K線圖：滑鼠/點按查OHLC，拖曳價格軸/時間軸可各自縮放，雙擊重置。☆可釘選合約置頂；「⚠資料可能過期」表示該合約暫時受限速影響沿用舊資料。</footer>
 </div>
 <script>
 const B='https://fapi.binance.com',$=s=>document.querySelector(s);
@@ -90,8 +90,12 @@ const VOL_PERCENTILE=70,ATR_PERCENTILE=30,TOP_N=50; // 與 Pine 量能/波動度
 const ST=[['▲','順勢上漲','多方建倉'],['◆','背離上漲','空方建倉'],['△','順勢上漲','空方回補'],['◇','背離上漲','多方止損'],['▼','順勢下跌','空方建倉'],['◆','背離下跌','多方建倉'],['▽','順勢下跌','多方止損'],['◇','背離下跌','空方回補']];
 const FZ=['極低','低位','偏弱','偏強','高位','極高'],DZ=['D極低','D低','D偏弱','D偏強','D高','D極高'];
 const FLT=[['all','全部'],['bull','多頭共振≥3'],['bear','空頭共振≥3']];
-// f_stateScore：態1..8；v10.1起空方態(2/4/5/7)分數全數減半、多方態(1/3/6/8)維持不變，刻意降低空方權重
-const SCORE=[2.0,-0.5,1.0,-0.25,-1.0,1.0,-0.5,0.5];
+// f_stateScore：態1..8，多空對稱（1↔5、3↔7、6↔2、8↔4）；空方減半只留在訊號層（弱空）
+const SCORE=[2.0,-1.0,1.0,-0.5,-2.0,1.0,-1.0,0.5];
+// 盤面判讀常數（對齊 Pine ACT_*）
+const ACT_STRONG=0.8,ACT_WEAK=0.35,ACT_VOL_RATE=0.40;
+// 各週期 RSI 六區邊界（對齊 Pine f_tfZones，順序同 TFS）；4h/1d為依RSI長度縮放的先驗，未經原生資料驗證
+const TFZ=[[20,40,50,60,80],[20,40,50,60,80],[20,40,50,60,80],[25.5,41.8,50,58.2,74.5],[25.5,41.8,50,58.2,74.5]];
 let S={ref:'0',flt:'all',srt:'score',actTf:'any',act:'all',q:''};
 const TFIDX=Object.fromEntries(TFS.map((t,i)=>[t[0],i]));
 try{Object.assign(S,JSON.parse(localStorage.getItem('s8')||'{}'))}catch(e){}
@@ -145,7 +149,7 @@ function stateColor(s,conf,it){
  return`hsl(${h},${sat.toFixed(0)}%,${lig}%)`;
 }
 const bk=s=>s==1||s==3?1:s==5||s==7?-1:0;
-const fz=r=>r<20?0:r<40?1:r<50?2:r<60?3:r<80?4:5; // 固定RSI六區：0極低 1低位 2偏弱 3偏強 4高位 5極高
+const fz=(r,z)=>isNaN(r)?2:r<z[0]?0:r<z[1]?1:r<z[2]?2:r<z[3]?3:r<z[4]?4:5; // 固定RSI六區(邊界依週期)：0極低 1低位 2偏弱 3偏強 4高位 5極高
 const st8=(p,o,c)=>p&&o&&c?1:p&&o&&!c?2:p&&!o&&c?3:p&&!o&&!c?4:!p&&o&&!c?5:!p&&o&&c?6:!p&&!o&&!c?7:8;
 function sticky(raw,thr){let u=true;return raw.map((x,i)=>{if(!isNaN(x)){if(x>thr[i])u=true;else if(x<-thr[i])u=false}return u})}
 // ═══ v10 四分組＋RSI優先／量能次要 訊號分級（對齊 Pine f_group/f_rsiFavorable/f_signalInfo/f_labelText）═══
@@ -155,12 +159,11 @@ function rsiFavorable(s,z){const g=GROUP(s);return g==1?z<=1:g==2?(z==1||z==2):g
 const strongCont=(s,z,vc)=>(s==1||s==3)&&z==5&&!vc; // 延續組RSI極端過熱(80-100)但未爆量：回測顯示反而是最強延續段
 function signalInfo(s,z,vc){
  const g=GROUP(s),fav=rsiFavorable(s,z),sc=strongCont(s,z,vc);
- let tier=-1,warnType=0,shortTier=0; // tier:2=A強訊號 1=B一般訊號 0=警示/疑似出貨 -1=RSI不在有利區不顯示
- if(g==4)tier=0;
- else if(g==1){if(fav)tier=vc?2:1}
+ let tier=-1,warnType=0,shortTier=0; // tier:2=A強訊號 1=B一般訊號 -1=無(警示組態2/4不當訊號)
+ if(g==1){if(fav)tier=vc?2:1}
  else if(g==2){if(fav)tier=(s==8&&vc)?2:1} // 築底組：態6爆量不加分(甚至略負面)，僅態8爆量升A級
- else{ // 延續組(g==3)
-  if(fav){if(vc){tier=0;warnType=1}else tier=1} // 有利區內爆量＝疑似出貨/派發，改標警示而非加碼
+ else if(g==3){ // 延續組；警示組(g==4)維持 tier=-1
+  if(fav){if(vc)warnType=1;else tier=1} // 有利區內爆量＝疑似出貨/派發，改標警示而非加碼
   else if(sc)tier=1;
   else if(z==3)shortTier=1; // RSI50-60：弱空/輕倉模塊，權重刻意最低(見v10.1)
  }
@@ -168,7 +171,6 @@ function signalInfo(s,z,vc){
 }
 function labelText(s,info){
  const{tier,warnType,shortTier,g,sc}=info;
- if(g==4)return s==2?'高位空方加倉警示':'虛弱上漲警示';
  if(warnType==1)return'疑似出貨/派發';
  if(g==1)return tier==2?'超跌反彈(量能確認)':tier==1?'超跌反彈觀察':'';
  if(g==2)return tier==2?'低位吸籌築底(強)':tier==1?'低位吸籌築底':'';
@@ -178,7 +180,6 @@ function labelText(s,info){
 }
 function tagFor(info){
  const{tier,warnType,shortTier,g,sc}=info;
- if(g==4)return'警示';
  if(warnType==1)return'出貨';
  if(g==1)return tier==2?'反彈強':tier==1?'反彈':'';
  if(g==2)return tier==2?'築底強':tier==1?'築底':'';
@@ -206,38 +207,40 @@ function mechFor(s){
  if(s==8)return{icon:'◆',bull:false}; // 平/減倉(空方)
  return null;
 }
-// 與 Pine f_marketActionText 完全一致：v10已移除ADX趨勢濾網，只保留波動度確認率門檻(baseFilterOK)
-function marketAction(hasData,stateScore,rsiMean,dynZoneMean,volumeRate,volatilityRate){
+// 與 Pine f_marketActionText 完全一致：多空對稱分數；RSI均值門檻由該週期邊界推得；不使用動態RSI六區
+function marketAction(hasData,scoreMean,rsiMean,volRate,volatRate,z){
  if(!hasData)return{txt:'資料累積中',cls:'act-neu'};
- const baseFilterOK=volatilityRate>=0.5;
- if(stateScore>=1.0&&rsiMean>=55&&dynZoneMean>=3&&volumeRate>=0.60&&baseFilterOK)return{txt:'多頭推進',cls:'act-bull'};
- if(stateScore>=0.35&&rsiMean>=50&&dynZoneMean>=2&&baseFilterOK)return{txt:'偏多蓄勢',cls:'act-bull'};
- if(stateScore<=-1.0&&rsiMean<=45&&dynZoneMean<=2&&volumeRate>=0.60&&baseFilterOK)return{txt:'空頭主導',cls:'act-bear'};
- if(stateScore<=-0.35&&rsiMean<=50&&dynZoneMean<=3&&baseFilterOK)return{txt:'偏空壓力',cls:'act-bear'};
+ const rsiMid=z[2],bullStrong=(z[2]+z[3])/2,bearStrong=(z[1]+z[2])/2;
+ const baseOK=volatRate>=0.5,volOK=volRate>=ACT_VOL_RATE;
+ if(scoreMean>=ACT_STRONG&&rsiMean>=bullStrong&&volOK&&baseOK)return{txt:'多頭推進',cls:'act-bull'};
+ if(scoreMean>=ACT_WEAK&&rsiMean>=rsiMid&&baseOK)return{txt:'偏多蓄勢',cls:'act-bull'};
+ if(scoreMean<=-ACT_STRONG&&rsiMean<=bearStrong&&volOK&&baseOK)return{txt:'空頭主導',cls:'act-bear'};
+ if(scoreMean<=-ACT_WEAK&&rsiMean<=rsiMid&&baseOK)return{txt:'偏空壓力',cls:'act-bear'};
  return{txt:'多空拉鋸',cls:'act-neu'};
 }
-function buildCandles(kl,pUpA,oiUpAt,cUpA,rs,dzArr,confirmedArr,volatilityOKArr,confirmBars){
+function buildCandles(kl,pUpA,oiUpAt,oiRealAt,cUpA,rs,dzArr,confirmedArr,volatilityOKArr,confirmBars,z){
  const n=kl.length,MAXB=200,start=Math.max(0,n-MAXB),cd=[];
- let curSi=null,curDur=1;
+ let curSi=null,curDur=1,armed=true,idle=0;
  for(let i=0;i<n;i++){
   const si=st8(pUpA[i],oiUpAt(i),cUpA[i]);
-  const same=curSi!==null&&si===curSi;
-  curDur=same?curDur+1:1;
+  curDur=(curSi!==null&&si===curSi)?curDur+1:1;
   curSi=si;
-  if(i<start)continue;
-  const ri=rs[i];if(isNaN(ri))continue;
-  const it=Math.abs((fz(ri)+dzArr[i])/2-2.5)/2.5; // intensity＝固定區＋動態區blend，對齊Pine zoneBlendBar
-  const conf=confirmedArr[i]; // K棒著色仍看量能達標(volConfirmedBar)，對齊Pine plotBodyColor（此段沿用舊版不變）
+  const ri=rs[i],zi=fz(ri,z),conf=confirmedArr[i];
+  // 訊號層：邊緣觸發。合成條件由假變真才標；同一轉態內條件消失連續「確認根數」根後才重新武裝
+  const info=signalInfo(si,zi,conf);
+  const active=volatilityOKArr[i]&&curDur>=confirmBars&&(info.tier>=1||info.warnType==1||info.shortTier==1);
+  let fire=false;
+  if(curDur===1){armed=true;idle=0}
+  if(active){idle=0;if(armed){fire=true;armed=false}}
+  else{idle++;if(idle>=confirmBars)armed=true}
+  if(i<start||isNaN(ri))continue;
+  const it=Math.abs((zi+dzArr[i])/2-2.5)/2.5; // intensity＝固定區＋動態區blend，對齊Pine zoneBlendBar
   const col=stateColor(si,conf,it);
-  // ★v10：標記關卡不再要求量能達標(B級訊號可在未爆量時就出現，僅A級才需要)，只需波動度濾網通過
-  // ★v13：標記關卡不再要求量能達標(B級訊號可在未爆量時就出現，僅A級才需要)，只需波動度濾網通過
-  const baseGate=volatilityOKArr[i]; // isconfirmed(恆真)∧oiValid(恆真，靠CVD備援)∧volatilityOK
-  const confirmSig=baseGate&&curDur===confirmBars; // 單一確認事件：只在剛好持續到第N根(依週期)時觸發一次
-  let sig=null,mech=null;
-  if(confirmSig){
-   const info=signalInfo(si,fz(ri),conf); // ★確認當下用「這一根」即時RSI區間/量能狀態計算
-   sig=markerFor(si,info);
-   const mf=mechFor(si); // 機制層：8態全覆蓋，與訊號層(RSI有利區濾網)無關，永遠獨立顯示
+  const sig=fire?markerFor(si,info):null;
+  // 機制層：僅真實OI，狀態剛好達到確認根數的那一根標一次
+  let mech=null;
+  if(volatilityOKArr[i]&&oiRealAt(i)&&curDur===confirmBars){
+   const mf=mechFor(si);
    if(mf)mech={icon:mf.icon,col:mf.bull?'rgba(0,200,83,.45)':'rgba(255,23,68,.45)'};
   }
   cd.push({time:Math.floor(+kl[i][0]/1000),open:+kl[i][1],high:+kl[i][2],low:+kl[i][3],close:+kl[i][4],color:col,borderColor:col,wickColor:col,sig,mech});
@@ -246,7 +249,7 @@ function buildCandles(kl,pUpA,oiUpAt,cUpA,rs,dzArr,confirmedArr,volatilityOKArr,
 }
 function analyze(kl,oi,ti){
  const[,rl,sm,voLen,nAction,lookback,confirmBars]=TFS[ti],h=kl.map(k=>+k[2]),l=kl.map(k=>+k[3]),c=kl.map(k=>+k[4]),v=kl.map(k=>+k[5]),tb=kl.map(k=>+k[9]),n=c.length;
- const rs=rsi(c,rl),r=rs[n-1];
+ const z=TFZ[ti],rs=rsi(c,rl),r=rs[n-1];
  const pUpA=sticky(chg(c),sma(abs(chg(c)),sm));
  const cs=wma(tb.map((x,i)=>2*x-v[i]),sm),cUpA=sticky(cs,sma(abs(cs),sm));
  // OI：真實幣安OI優先；取不到則以CVD方向近似替代，恆維持8態（對齊 useFallbackOI 預設開啟）
@@ -255,7 +258,7 @@ function analyze(kl,oi,ti){
   const oiArr=oi.length>n?oi.slice(oi.length-n):oi; // 對齊K線末端，避免OI筆數超過K線根數時off算成負值
   const od=chg(wma(oiArr,sm));oUpA=sticky(od,sma(abs(od),sm));ov=true;off=n-oiArr.length;
  }
- const oiUpAt=i=>(ov&&i>=off)?oUpA[i-off]:cUpA[i]; // 未覆蓋到真實OI的較舊K棒明確退回CVD方向近似
+ const oiRealAt=i=>ov&&i>=off,oiUpAt=i=>oiRealAt(i)?oUpA[i-off]:cUpA[i]; // 未覆蓋到真實OI的較舊K棒明確退回CVD方向近似
  const s=st8(pUpA[n-1],oiUpAt(n-1),cUpA[n-1]);
  let dur=1;
  for(let i=n-2;i>=0;i--){
@@ -273,26 +276,26 @@ function analyze(kl,oi,ti){
  const p10Arr=rollingPercentileNearestRank(rs,lookback,10),p25Arr=rollingPercentileNearestRank(rs,lookback,25),p50Arr=rollingPercentileNearestRank(rs,lookback,50),p75Arr=rollingPercentileNearestRank(rs,lookback,75),p90Arr=rollingPercentileNearestRank(rs,lookback,90);
  const dzArr=rs.map((ri,i)=>isNaN(ri)?2:ri<=p10Arr[i]?0:ri<=p25Arr[i]?1:ri<=p50Arr[i]?2:ri<=p75Arr[i]?3:ri<=p90Arr[i]?4:5);
  const dz=dzArr[n-1];
- const cd=buildCandles(kl,pUpA,oiUpAt,cUpA,rs,dzArr,confirmedArr,volatilityOKArr,confirmBars);
+ const cd=buildCandles(kl,pUpA,oiUpAt,oiRealAt,cUpA,rs,dzArr,confirmedArr,volatilityOKArr,confirmBars,z);
  // 「已確認」＝OI有效(恆真，靠CVD備援)＋波動度濾網通過＋同態別已持續≥N根(依週期)；v13起不再額外要求量能達標，量能只影響分級與文字
  const ok=volatilityOKArr[n-1]&&dur>=confirmBars;
  // 綜合判讀：最近N根（各週期不同，對齊 Pine f_priceActionN）加權平均，含波動度確認率(v10已移除趨勢確認率)
  const start=Math.max(0,n-nAction);
- let scoreSum=0,rsiSum=0,dzSum=0,volSum=0,volaSum=0,cn=0;
+ let scoreSum=0,rsiSum=0,volSum=0,volaSum=0,cn=0;
  for(let i=start;i<n;i++){
   const ri=rs[i];if(isNaN(ri))continue;
   const si=st8(pUpA[i],oiUpAt(i),cUpA[i]);
-  scoreSum+=SCORE[si-1];rsiSum+=ri;dzSum+=dzArr[i];
+  scoreSum+=SCORE[si-1];rsiSum+=ri;
   volSum+=confirmedArr[i]?1:0;volaSum+=volatilityOKArr[i]?1:0;cn++;
  }
  const hasData=cn>=nAction;
- const act=marketAction(hasData,hasData?scoreSum/cn:NaN,hasData?rsiSum/cn:NaN,hasData?Math.round(dzSum/cn):2,hasData?volSum/cn:NaN,hasData?volaSum/cn:0);
+ const act=marketAction(hasData,hasData?scoreSum/cn:NaN,hasData?rsiSum/cn:NaN,hasData?volSum/cn:NaN,hasData?volaSum/cn:0,z);
  // 解讀：8態+RSI+量能整合後的結論，僅在「已確認」時才產生文字(對齊Pine readTxt/ctxTxt)
- const info=signalInfo(s,fz(r),confirmedArr[n-1]);
+ const info=signalInfo(s,fz(r,z),confirmedArr[n-1]);
  const ctxLabel=ok?labelText(s,info):'';
  const ctxTag=ok?tagFor(info):'';
- const ctxWarn=ok&&(info.warnType==1||info.g==4||info.shortTier==1);
- return{s,r,ov,conf:confirmedArr[n-1],ok,fz:fz(r),dz,ctxLabel,ctxTag,ctxWarn,tf:TFS[ti][0],dur,action:act.txt,actionCls:act.cls,cd};
+ const ctxWarn=ok&&(info.warnType==1||info.shortTier==1);
+ return{s,r,ov,conf:confirmedArr[n-1],ok,fz:fz(r,z),dz,ctxLabel,ctxTag,ctxWarn,tf:TFS[ti][0],dur,action:act.txt,actionCls:act.cls,cd};
 }
 // ---- 取資料 ----
 async function j(u){const r=await fetch(B+u);if(!r.ok)throw new Error(r.status);return r.json()}
