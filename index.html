@@ -30,7 +30,11 @@ h1{font-size:18px;margin:0}
 .dw{overflow-x:auto}
 .dtb{width:100%;border-collapse:collapse;font-size:12px;min-width:680px}
 .dtb th{color:var(--mu);text-align:left;padding:4px 8px}.dtb td{padding:6px 8px;border-top:1px solid var(--ln);white-space:nowrap}
-.cv{width:100%;height:200px;display:block;margin-top:8px}
+.cw{position:relative;margin-top:8px}.cv{width:100%;height:200px;display:block;touch-action:none;cursor:crosshair}
+.ctip{position:absolute;pointer-events:none;background:var(--pn);border:1px solid var(--ln);border-radius:6px;padding:4px 7px;font-size:11px;line-height:1.5;white-space:nowrap;display:none;z-index:5}
+.hint{color:var(--mu);font-size:10px;margin-top:2px}
+.pin{background:none;border:0;color:var(--mu);cursor:pointer;font-size:15px;padding:0 4px 0 0;line-height:1}.pin[aria-pressed=true]{color:var(--ac)}
+.stale{color:var(--ac);margin-left:4px}.row:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
 .empty{text-align:center;color:var(--mu);padding:40px 0}
 footer{color:var(--mu);font-size:12px;margin:14px 0;line-height:1.7}
 @media(max-width:720px){.row{grid-template-columns:repeat(3,1fr)}.sym{grid-column:1/-1}.c{grid-template-columns:1fr}.c em{grid-row:auto}}
@@ -45,7 +49,7 @@ footer{color:var(--mu);font-size:12px;margin:14px 0;line-height:1.7}
 <div class="bar"><div class="chips" id="flt"></div></div>
 <div id="list"><div class="empty">載入中…</div></div>
 <footer>每格：標記｜態別（順勢＝價格趨勢與 CVD 同向，背離＝相反）｜週期、MFI 區與數值；<b>強</b>＝近 6 根內的強事件（|OI 變化|×成交量 ≥ P95 且通過 CVD 死區）。標記形狀：●建倉順勢、○建倉背離、◆平倉順勢、◇平倉背離；左色條＝CVD 方向（綠買方主導、紅賣方主導）。<br>
-定義：態別側＝近 20 根回歸斜率；位階＝收盤在近 1000 根高低區間的位置（≥80% 高位、≤20% 低位）；MFI 僅作 K 棒顏色與分區；CVD＝2×主動買量−成交量（WMA 平滑）。僅用已收線 K 棒；OI 以收盤時間對齊，最新一根 OI 未出時顯示落後根數。幣安 OI 歷史只回溯 30 天，4h 的 OI 百分位樣本因此較少。<br>
+定義：態別側＝近 20 根回歸斜率；位階＝收盤在近 1000 根高低區間的位置（≥80% 高位、≤20% 低位）；MFI 僅作 K 棒顏色與分區；CVD＝2×主動買量−成交量（WMA 平滑）。僅用已收線 K 棒；OI 時間戳是收盤戳或開盤戳，依與成交量的相關性自動判定；最新一根 OI 未出時顯示落後根數，完全沒有 OI 時標示「無OI資料」。幣安 OI 歷史只回溯 30 天，4h 的 OI 百分位樣本因此較少。<br>
 離線回測（BTC/ETH/SOL/BNB，15M/1H/4H，2022–2026）：態別對後續方向沒有穩定預測力；僅「順勢建倉」後波動規模約 +6%、「背離平倉」約 −7%。本站為描述性資金流儀表，不構成買賣建議。</footer>
 </div>
 <script>
@@ -61,6 +65,7 @@ const INT=["高位追多推進","中位多方加碼","低位吸籌（趨勢向�
 let S={flt:'all',srt:'ev',ref:'60',q:''};
 try{Object.assign(S,JSON.parse(localStorage.getItem('mf')||'{}'))}catch(e){}
 const save=()=>{try{localStorage.setItem('mf',JSON.stringify(S))}catch(e){}};
+const pins=new Set(S.pins||[]);
 let rows=new Map(),busy=false,timer=0,limited=false;const open=new Set(),ctf=new Map();
 // ---- 指標運算 ----
 const wma=(a,n)=>{const d=n*(n+1)/2;return a.map((_,i)=>{if(i<n-1)return NaN;let s=0;for(let k=0;k<n;k++)s+=a[i-n+1+k]*(k+1);return s/d})};
@@ -83,9 +88,13 @@ function analyze(kl,oiMap,ti){
  const zone=m.map(x=>{if(!isNaN(x)){const b=zn==null?0:1.5;let z=zn??0;while(z<5&&x>=Z[z]+b)z++;while(z>0&&x<Z[z-1]-b)z--;zn=z}return zn??-1});
  // CVD＝主動買賣量差的平滑比；強度門檻皆取前一根的百分位
  const wb=wma(tb.map((x,i)=>2*x-v[i]),cl),wv=wma(v,cl),cvd=wb.map((x,i)=>x/wv[i]),ac=cvd.map(Math.abs),cd=pct(ac,LB,PF);
- const oi=ct.map(t=>oiMap.has(t)?oiMap.get(t):NaN),oc=oi.map((x,i)=>i&&x>0&&oi[i-1]>0?(x-oi[i-1])/oi[i-1]*1e4:NaN);
+ // OI時間戳慣例（戳在收盤或開盤）以|ΔOI|與成交量的相關性較高者為準，預設戳在收盤；容許±1分鐘誤差
+ const mkOI=sh=>ct.map(t=>{for(const d of[0,1,-1]){const x=oiMap.get(t-sh*sec/60+d);if(x!==undefined)return x}return NaN});
+ const corr=oa=>{const xs=[],ys=[];for(let i=Math.max(1,n-500);i<n;i++)if(oa[i]>0&&oa[i-1]>0&&v[i]>0){xs.push(Math.log(1+Math.abs(oa[i]-oa[i-1])/oa[i-1]*1e4));ys.push(Math.log(v[i]))}
+  if(xs.length<30)return-1;const mx=xs.reduce((p,q)=>p+q)/xs.length,my=ys.reduce((p,q)=>p+q)/ys.length;let sxy=0,sxx=0,syy=0;xs.forEach((x,i)=>{sxy+=(x-mx)*(ys[i]-my);sxx+=(x-mx)**2;syy+=(ys[i]-my)**2});return sxy/Math.sqrt(sxx*syy||1)};
+ const oi0=mkOI(0),oi1=mkOI(1),oi=corr(oi1)>corr(oi0)+.02?oi1:oi0,oc=oi.map((x,i)=>i&&x>0&&oi[i-1]>0?(x-oi[i-1])/oi[i-1]*1e4:NaN);
  const ao=oc.map(Math.abs),pw=ao.map((x,i)=>x*v[i]),od=pct(ao,LB,PF,MINN),pt=pct(pw,LB,PS,MINN),sl=slope(c,TREND);
- const tier=Array(n).fill(1);
+ const tier=Array(n).fill(-1); // -1＝K棒不足1000根，位階未知
  for(let i=Math.max(LB-1,n-260);i<n;i++){let hi=-1/0,lo=1/0;for(let k=i-LB+1;k<=i;k++){if(h[k]>hi)hi=h[k];if(l[k]<lo)lo=l[k]}
   const p=hi>lo?(c[i]-lo)/(hi-lo):NaN;tier[i]=isNaN(p)?1:p>=HI?0:p<=LO?2:1}
  const A=[];let lastId=0,lastBar=-99;
@@ -98,9 +107,9 @@ function analyze(kl,oiMap,ti){
  }
  let L=n-1;while(L>0&&isNaN(oc[L]))L--;if(n-1-L>50)L=n-1; // OI對齊失敗時不回退太遠
  let lf=null;for(let i=L;i>=Math.max(0,L-60);i--)if(A[i].fire){lf={s:A[i].s,ago:L-i};break}
- const lag=n-1-L,start=Math.max(0,n-140),cd2=[];
- for(let i=start;i<n;i++)cd2.push({o:o[i],h:h[i],l:l[i],c:c[i],col:mc(m[i],oe),ev:A[i].fire?A[i].s:0});
- return{tf:TFS[ti][0],s:A[L].s,strong:A[L].strong,zone:zone[L],mfi:m[L],up:sl[L]>=0,tier:tier[L],oc:oc[L],cvd:cvd[L],lf,lag,cd:cd2,
+ const lag=n-1-L,start=Math.max(0,n-300),cd2=[];
+ for(let i=start;i<n;i++)cd2.push({o:o[i],h:h[i],l:l[i],c:c[i],col:mc(m[i],oe),ev:A[i].fire?A[i].s:0,tm:ct[i]*6e4-sec*1e3,m:m[i]});
+ return{tf:TFS[ti][0],noOI:!oc.slice(-60).some(x=>!isNaN(x)),s:A[L].s,strong:A[L].strong,zone:zone[L],mfi:m[L],up:sl[L]>=0,tier:tier[L],oc:oc[L],cvd:cvd[L],lf,lag,cd:cd2,
   due:lag==0?(ct[n-1]*6e4+sec*1e3+6e4):Date.now()+9e4}; // 新K棒收線後再取；OI落後則90秒後重試
 }
 // ---- 取資料 ----
@@ -108,6 +117,8 @@ async function j(u){const r=await fetch(B+u);if(!r.ok)throw new Error(r.status);
 async function getOI(sym,tf){try{return new Map((await j(`/futures/data/openInterestHist?symbol=${sym}&period=${tf}&limit=500`)).map(x=>[Math.round(x.timestamp/6e4),+x.sumOpenInterest]))}catch(e){return new Map()}}
 async function pool(a,n,f){let i=0;await Promise.all(Array(n).fill(0).map(async()=>{while(i<a.length)await f(a[i++])}))}
 const setSt=(t,e)=>{const s=$('#st');s.textContent=t;s.className=e?'err':''};
+// 排程：分頁在背景時暫停掃描，回到前景後 5 秒內補掃
+const arm=()=>{clearTimeout(timer);if(+S.ref)timer=setTimeout(function f(){document.hidden?(timer=setTimeout(f,5e3)):scan()},S.ref*1e3)};
 async function scan(){
  if(busy)return;busy=true;clearTimeout(timer);setSt('取得市場清單…');
  try{
@@ -115,17 +126,18 @@ async function scan(){
   const keep=new Map();tk.forEach((x,i)=>keep.set(x.symbol,{...(rows.get(x.symbol)||{t:[]}),sym:x.symbol,px:+x.lastPrice,ch:+x.priceChangePercent,qv:+x.quoteVolume,rk:i+1}));
   rows=keep;render();let done=0,fail=0;limited=false;
   await pool([...rows.values()],8,async r=>{
+   let bad=false;
    for(let i=0;i<3;i++){
     const c=r.t[i];if(c&&Date.now()<c.due)continue;
-    if(limited){fail++;continue}
+    if(limited){fail++;bad=true;continue}
     try{const[kl,oi]=await Promise.all([j(`/fapi/v1/klines?symbol=${r.sym}&interval=${TFS[i][0]}&limit=1500`),getOI(r.sym,TFS[i][0])]);r.t[i]=analyze(kl,oi,i)}
-    catch(e){fail++;if(/418|429/.test(e.message))limited=true}
+    catch(e){fail++;bad=true;if(/418|429/.test(e.message))limited=true}
    }
-   r.ver=(r.ver||0)+1;done++;setSt(`掃描中 ${done}/${rows.size}`);if(done%5==0)render();
+   r.err=bad;r.ver=(r.ver||0)+1;done++;setSt(`掃描中 ${done}/${rows.size}`);if(done%5==0)render();
   });
   render();setSt(`已更新 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜${rows.size}檔${fail?`｜${fail}項失敗或限速`:''}`);
  }catch(e){const m=String(e.message);setSt(/451|403/.test(m)?'幣安拒絕連線（地區限制），請換網路或使用 VPN':/418|429/.test(m)?'請求過於頻繁，請稍候再掃描':'連線失敗：'+m,1)}
- busy=false;if(+S.ref)timer=setTimeout(scan,S.ref*1e3);
+ busy=false;arm();
 }
 // ---- 畫面 ----
 const fp=p=>p>=100?p.toFixed(2):String(+p.toPrecision(5)),fq=q=>q>=1e9?(q/1e9).toFixed(2)+'B':q>=1e6?(q/1e6).toFixed(1)+'M':(q/1e3).toFixed(0)+'K';
@@ -136,40 +148,115 @@ const evMin=r=>Math.min(...r.t.map((a,i)=>hasEv(a)?a.lf.ago*TFS[i][1]/60:1/0));
 function cell(a){
  if(!a)return'<div class="c"><em>·</em><span>載入中</span></div>';
  const s=a.s,m=s?ST[s]:null;
- return`<div class="c ${s?(m[2]>0?'b1':'b-1'):''}${hasEv(a)?' st':''}"><em style="color:${s?COL[s]:'var(--mu)'}">${m?m[0]:'·'}</em><span>${s?'態'+s+' '+m[1].slice(0,2):'OI持平'}</span><u>${a.tf} · ${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(0)}${hasEv(a)?` <small>強 ${a.lf.ago}根前</small>`:''}${a.lag?` <small>OI落後${a.lag}</small>`:''}</u></div>`}
+ return`<div class="c ${s?(m[2]>0?'b1':'b-1'):''}${hasEv(a)?' st':''}"><em style="color:${s?COL[s]:'var(--mu)'}">${m?m[0]:'·'}</em><span>${s?'態'+s+' '+m[1].slice(2):a.noOI?'無OI資料':'OI持平'}</span><u>${a.tf} · ${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(0)}${hasEv(a)?` <small>強 ${a.lf.ago}根前</small>`:''}${a.lag?` <small>OI落後${a.lag}</small>`:''}</u></div>`}
 function det(r){
  const tr=r.t.map(a=>{if(!a)return'';const s=a.s;
-  return`<tr><td>${a.tf}</td><td>${s?`<span style="color:${COL[s]}">${ST[s][0]}</span> 態${s} ${ST[s][1]}`:'OI持平'}</td><td>${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(1)}</td><td>${a.up?'上行':'下行'}｜${TN[a.tier]}</td><td>${isNaN(a.oc)?'—':a.oc.toFixed(1)+'bp'}</td><td>${isNaN(a.cvd)?'—':(a.cvd*100).toFixed(1)+'%'}</td><td>${s?INT[(s-1)*3+a.tier]:'—'}</td><td>${a.lf?`態${a.lf.s}・${a.lf.ago}根前`:'—'}</td></tr>`}).join('');
+  return`<tr><td>${a.tf}</td><td>${s?`<span style="color:${COL[s]}">${ST[s][0]}</span> 態${s} ${ST[s][1]}`:a.noOI?'無OI資料':'OI持平'}</td><td>${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(1)}</td><td>${a.up?'上行':'下行'}｜${a.tier>=0?TN[a.tier]:'—'}</td><td>${isNaN(a.oc)?'—':a.oc.toFixed(1)+'bp'}</td><td>${isNaN(a.cvd)?'—':(a.cvd*100).toFixed(1)+'%'}</td><td>${s&&a.tier>=0?INT[(s-1)*3+a.tier]:'—'}</td><td>${a.lf?`態${a.lf.s}・${a.lf.ago}根前`:'—'}</td></tr>`}).join('');
  const i=ctf.get(r.sym)??1;
- return`<div class="dw"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>MFI</th><th>價格趨勢｜位階</th><th>ΔOI</th><th>CVD 比</th><th>意圖</th><th>最近強事件</th></tr></thead><tbody>${tr}</tbody></table></div><div class="chips" style="margin-top:8px">${TFS.map((t,k)=>`<button class="chip cf" data-i="${k}" aria-pressed="${k==i}">${t[0]}</button>`).join('')}</div><canvas class="cv" id="cv_${r.sym}"></canvas>`}
-function paint(sym){
- const cv=document.getElementById('cv_'+sym),r=rows.get(sym),a=r&&r.t[ctf.get(sym)??1];if(!cv||!a)return;
- const d=window.devicePixelRatio||1,W=cv.clientWidth,H=200;cv.width=W*d;cv.height=H*d;
+ return`<div class="dw"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>MFI</th><th>價格趨勢｜位階</th><th>ΔOI</th><th>CVD 比</th><th>意圖</th><th>最近強事件</th></tr></thead><tbody>${tr}</tbody></table></div><div class="chips" style="margin-top:8px">${TFS.map((t,k)=>`<button class="chip cf" data-i="${k}" aria-pressed="${k==i}">${t[0]}</button>`).join('')}<button class="chip crst" title="重置縮放與平移">⤺重置</button></div><div class="cw"><canvas class="cv" id="cv_${r.sym}"></canvas><div class="ctip"></div></div><div class="hint" id="ch_${r.sym}"></div>`}
+// ---- K線圖：平移／縮放／十字準星 ----
+const views=new Map(),pad2=n=>String(n).padStart(2,'0'),ft=t=>{const d=new Date(t);return`${pad2(d.getMonth()+1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`};
+let gesture=false,pendRender=false;
+const vkey=sym=>sym+'|'+(ctf.get(sym)??1),resetView=sym=>views.delete(vkey(sym));
+function getView(sym,len){const k=vkey(sym);let v=views.get(k);if(!v){v={n:Math.min(120,len),off:0,mult:1,pan:0};views.set(k,v)}
+ v.n=Math.max(10,Math.min(len,Math.round(v.n)));v.off=Math.max(0,Math.min(len-v.n,Math.round(v.off)));return v}
+function paint(sym,hx,hy){
+ const cv=document.getElementById('cv_'+sym),r=rows.get(sym),a=r&&r.t[ctf.get(sym)??1];if(!cv||!a||!a.cd.length)return;
+ const cd=a.cd,v=getView(sym,cd.length),sl=cd.slice(cd.length-v.off-v.n,cd.length-v.off);
+ const d=window.devicePixelRatio||1,W=cv.clientWidth||300,H=200;cv.width=W*d;cv.height=H*d;
  const x=cv.getContext('2d');x.setTransform(d,0,0,d,0,0);
- const hi=Math.max(...a.cd.map(k=>k.h)),lo=Math.min(...a.cd.map(k=>k.l)),pw=W-46,sl=pw/a.cd.length,y=v=>12+(H-24)*(1-(v-lo)/(hi-lo||1));
- x.font='10px sans-serif';x.fillStyle='#8b95a3';x.textBaseline='middle';
- [0,.5,1].forEach(g=>x.fillText(fp(lo+(hi-lo)*g),pw+4,y(lo+(hi-lo)*g)));
- a.cd.forEach((k,i)=>{const cx=sl*i+sl/2;x.strokeStyle=x.fillStyle=k.col;x.beginPath();x.moveTo(cx,y(k.h));x.lineTo(cx,y(k.l));x.stroke();
-  x.fillRect(cx-Math.max(1,sl*.35),Math.min(y(k.o),y(k.c)),Math.max(2,sl*.7),Math.max(1,Math.abs(y(k.o)-y(k.c))));
-  if(k.ev){x.fillStyle=COL[k.ev];x.textAlign='center';x.fillText(ST[k.ev][0],cx,ST[k.ev][2]>0?y(k.l)+8:y(k.h)-8);x.textAlign='left'}});
+ let hi=Math.max(...sl.map(k=>k.h)),lo=Math.min(...sl.map(k=>k.l));if(hi===lo){hi+=1;lo-=1}
+ const pd=(hi-lo)*.08;hi+=pd;lo-=pd;
+ if(v.mult!==1){const mid=(hi+lo)/2,hf=(hi-lo)/2*v.mult;hi=mid+hf;lo=mid-hf}
+ hi+=v.pan;lo+=v.pan;
+ const padL=2,padR=46,padT=13,padB=16,pw=W-padL-padR,ph=H-padT-padB,slot=pw/sl.length,y=q=>padT+ph-(q-lo)/(hi-lo)*ph;
+ const cs=getComputedStyle(cv),mu=cs.getPropertyValue('--mu').trim()||'#8b95a3',ln=cs.getPropertyValue('--ln').trim()||'#252c36';
+ x.font='10px sans-serif';x.textBaseline='middle';x.textAlign='left';
+ for(let g=0;g<=5;g++){const q=lo+(hi-lo)*g/5,yy=y(q);x.strokeStyle=ln;x.globalAlpha=.6;x.beginPath();x.moveTo(padL,yy);x.lineTo(padL+pw,yy);x.stroke();x.globalAlpha=1;x.fillStyle=mu;x.fillText(fp(q),padL+pw+4,yy)}
+ x.textBaseline='alphabetic';const tn=Math.min(4,sl.length);
+ for(let k=0;k<tn;k++){const i=Math.round(k*(sl.length-1)/Math.max(1,tn-1));x.textAlign=k==0?'left':k==tn-1?'right':'center';x.fillStyle=mu;x.fillText(ft(sl[i].tm),k==0?padL:k==tn-1?padL+pw:padL+slot*i+slot/2,H-3)}
+ x.textAlign='left';
+ sl.forEach((k,i)=>{const cx=padL+slot*i+slot/2;x.strokeStyle=x.fillStyle=k.col;x.lineWidth=1;x.beginPath();x.moveTo(cx,y(k.h));x.lineTo(cx,y(k.l));x.stroke();
+  x.fillRect(cx-Math.max(.5,Math.min(slot*.35,5)),Math.min(y(k.o),y(k.c)),Math.max(1,Math.min(slot*.7,10)),Math.max(1,Math.abs(y(k.o)-y(k.c))));
+  if(k.ev){x.fillStyle=COL[k.ev];x.textAlign='center';x.textBaseline='middle';x.fillText(ST[k.ev][0],cx,ST[k.ev][2]>0?y(k.l)+8:y(k.h)-8);x.textAlign='left'}});
+ cv._L={padL,padR,padT,padB,pw,ph,slot,lo,hi,W,H,n:sl.length};
+ const tip=cv.parentElement.querySelector('.ctip'),hint=document.getElementById('ch_'+sym);
+ if(hint)hint.textContent=`顯示 ${sl.length}/${cd.length} 根｜拖曳平移、滾輪或雙指縮放、拖右側／底部座標軸個別縮放、雙擊重置、移動或點按查詢`;
+ if(hx==null||hx<padL||hx>padL+pw){tip.style.display='none';return}
+ const i=Math.max(0,Math.min(sl.length-1,Math.floor((hx-padL)/slot))),k=sl[i],cx=padL+slot*i+slot/2;
+ x.save();x.strokeStyle='rgba(139,149,163,.65)';x.setLineDash([3,3]);x.beginPath();x.moveTo(cx,padT);x.lineTo(cx,padT+ph);x.stroke();x.beginPath();x.moveTo(padL,hy);x.lineTo(padL+pw,hy);x.stroke();x.restore();
+ tip.innerHTML=`${ft(k.tm)}<br>O ${fp(k.o)}　H ${fp(k.h)}<br>L ${fp(k.l)}　C ${fp(k.c)}<br>MFI ${isNaN(k.m)?'—':k.m.toFixed(1)}${k.ev?`<br><span style="color:${COL[k.ev]}">${ST[k.ev][0]} 強事件 態${k.ev} ${ST[k.ev][1]}</span>`:''}`;
+ tip.style.display='block';let left=cx+8;if(left+150>W)left=cx-158;tip.style.left=Math.max(0,left)+'px';tip.style.top=Math.max(0,Math.min(H-80,hy+8))+'px';
 }
+const dz=(q,dead=6)=>Math.sign(q)*Math.max(0,Math.abs(q)-dead),clampM=m=>Math.max(.15,Math.min(6,m));
+// 指標事件統一：滑鼠／單指／雙指；主圖區拖曳＝平移，右側價格軸＝價格縮放，底部時間軸＝時間縮放
+function bind(cv,sym){
+ const P=new Map();let mode=null,s0=null,moved=false,lastTap=0;
+ const rel=e=>{const b=cv.getBoundingClientRect();return[e.clientX-b.left,e.clientY-b.top]};
+ const region=(px,py)=>{const L=cv._L;return!L?'plot':px>=L.padL+L.pw+10?'y':py>=L.padT+L.ph+6?'x':'plot'};
+ const cur=()=>{const a=rows.get(sym).t[ctf.get(sym)??1];return a&&a.cd.length?{len:a.cd.length,v:getView(sym,a.cd.length)}:null};
+ const start=()=>{const c=cur(),L=cv._L;if(!c)return;const pts=[...P.values()];
+  if(pts.length>=2)[mode,s0]=['pinch',{d:Math.hypot(pts[0][0]-pts[1][0],pts[0][1]-pts[1][1]),n:c.v.n,off:c.v.off}];
+  else{const[px,py]=pts[0];mode=region(px,py);s0={x:px,y:py,n:c.v.n,off:c.v.off,mult:c.v.mult,pan:c.v.pan,rng:L?L.hi-L.lo:1,ph:L?L.ph:160}}};
+ cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);P.set(e.pointerId,rel(e));moved=false;gesture=true;start()});
+ cv.addEventListener('pointermove',e=>{
+  if(!P.has(e.pointerId)){if(e.pointerType==='mouse'){const[px,py]=rel(e);region(px,py)==='plot'?paint(sym,px,py):paint(sym)}return}
+  P.set(e.pointerId,rel(e));const c=cur();if(!c||!mode)return;const pts=[...P.values()];
+  if(mode==='pinch'&&pts.length>=2){const q=Math.hypot(pts[0][0]-pts[1][0],pts[0][1]-pts[1][1]);if(Math.abs(q-s0.d)>3)moved=true;c.v.n=s0.n*s0.d/Math.max(1,q);c.v.off=s0.off}
+  else if(pts.length==1){const[px,py]=pts[0],dx=px-s0.x,dy=py-s0.y;if(Math.abs(dx)>4||Math.abs(dy)>4)moved=true;
+   if(mode==='y')c.v.mult=clampM(s0.mult*Math.exp(dz(dy)*.006));
+   else if(mode==='x')c.v.n=s0.n*Math.exp(dz(dx)*.006);
+   else if(moved){c.v.off=s0.off+dx/cv._L.slot;c.v.pan=s0.pan+dy*s0.rng/s0.ph}}
+  paint(sym);
+ });
+ const end=e=>{if(!P.has(e.pointerId))return;const[px,py]=rel(e);P.delete(e.pointerId);
+  if(P.size>0){start();return} // 還有手指按著：重算基準
+  gesture=false;
+  if(!moved&&mode&&e.type==='pointerup'){const t=Date.now();
+   if(t-lastTap<300){resetView(sym);paint(sym);lastTap=0}
+   else{lastTap=t;if(e.pointerType!=='mouse'&&region(px,py)==='plot')paint(sym,px,py)}}
+  mode=null;if(pendRender){pendRender=false;render()}};
+ cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+ cv.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'&&!P.size)paint(sym)});
+ cv.addEventListener('wheel',e=>{const c=cur();if(!c)return;e.preventDefault();const[px,py]=rel(e),f=e.deltaY>0?1.15:1/1.15;
+  if(region(px,py)==='y')c.v.mult=clampM(c.v.mult*f);
+  else if(Math.abs(e.deltaX)>Math.abs(e.deltaY))c.v.off+=e.deltaX/cv._L.slot;
+  else c.v.n*=f;
+  paint(sym)},{passive:false});
+}
+const paintOpen=sym=>{const cv=document.getElementById('cv_'+sym);if(cv&&!cv._b){cv._b=1;bind(cv,sym)}paint(sym)};
+const rc=new Map();
 function render(){
+ if(gesture){pendRender=true;return} // 手勢進行中不重建DOM，結束後補繪
+ const ae=document.activeElement,cl=ae&&ae.classList,fsel=cl?(cl.contains('row')?`.row[data-s="${ae.dataset.s}"]`:cl.contains('pin')?`.pin[data-pin="${ae.dataset.pin}"]`:null):null;
  let a=[...rows.values()].filter(r=>pass(r));
  if(S.q.trim())a=a.filter(r=>r.sym.includes(S.q.trim().toUpperCase()));
  a.sort(S.srt=='ev'?(x,y)=>evMin(x)-evMin(y)||x.rk-y.rk:(x,y)=>x.rk-y.rk);
- $('#list').innerHTML=a.map(r=>`<div class="row${open.has(r.sym)?' open':''}" data-s="${r.sym}"><div class="sym"><b>${r.sym.replace('USDT','')}</b><i>#${r.rk}</i><div>${fp(r.px)} <span class="${r.ch>=0?'up':'dn'}">${r.ch>=0?'+':''}${r.ch.toFixed(2)}%</span> · ${fq(r.qv)}</div></div>${[0,1,2].map(i=>cell(r.t[i])).join('')}<div class="det">${open.has(r.sym)?det(r):''}</div></div>`).join('')||'<div class="empty">沒有符合條件的合約</div>';
- open.forEach(paint);
+ a.sort((x,y)=>(pins.has(y.sym)?1:0)-(pins.has(x.sym)?1:0)); // 釘選置頂，組內維持原排序
+ $('#list').innerHTML=a.map(r=>{
+  const o=open.has(r.sym),pn=pins.has(r.sym),key=`${r.ver}|${r.px}|${o}|${pn}|${ctf.get(r.sym)}|${r.err}`,c=rc.get(r.sym);
+  if(c&&c.key===key)return c.html;
+  const html=`<div class="row${o?' open':''}" role="button" tabindex="0" aria-expanded="${o}" data-s="${r.sym}"><div class="sym"><button class="pin" data-pin="${r.sym}" aria-pressed="${pn}" title="釘選置頂">${pn?'★':'☆'}</button><b>${r.sym.replace('USDT','')}</b><i>#${r.rk}</i>${r.err?'<span class="stale" title="本輪更新失敗或遭限速，沿用舊資料">⚠</span>':''}<div>${fp(r.px)} <span class="${r.ch>=0?'up':'dn'}">${r.ch>=0?'+':''}${r.ch.toFixed(2)}%</span> · ${fq(r.qv)}</div></div>${[0,1,2].map(k=>cell(r.t[k])).join('')}<div class="det">${o?det(r):''}</div></div>`;
+  rc.set(r.sym,{key,html});return html;
+ }).join('')||'<div class="empty">沒有符合條件的合約</div>';
+ open.forEach(sym=>paintOpen(sym));
+ if(fsel){const e=document.querySelector(fsel);if(e)e.focus()}
 }
 $('#list').addEventListener('click',e=>{
+ const pb=e.target.closest('.pin');
+ if(pb){e.stopPropagation();const k=pb.dataset.pin;pins.has(k)?pins.delete(k):pins.add(k);S.pins=[...pins];save();render();return}
+ const rs=e.target.closest('.crst');
+ if(rs){const k=rs.closest('.row').dataset.s;resetView(k);paint(k);return}
  const cf=e.target.closest('.cf');
  if(cf){const row=cf.closest('.row');ctf.set(row.dataset.s,+cf.dataset.i);render();return}
  if(e.target.closest('.det'))return;
  const row=e.target.closest('.row');if(!row)return;const s=row.dataset.s;
  if(open.has(s))open.delete(s);else{open.clear();open.add(s)}render();
 });
+$('#list').addEventListener('keydown',e=>{if((e.key=='Enter'||e.key==' ')&&e.target.classList.contains('row')){e.preventDefault();e.target.click()}});
 $('#q').oninput=e=>{S.q=e.target.value;save();render()};
 $('#srt').onchange=e=>{S.srt=e.target.value;save();render()};
-$('#ref').onchange=e=>{S.ref=e.target.value;save();clearTimeout(timer);if(+S.ref&&!busy)timer=setTimeout(scan,S.ref*1e3)};
+$('#ref').onchange=e=>{S.ref=e.target.value;save();if(!busy)arm()};
 $('#flt').onclick=e=>{const f=e.target.dataset.f;if(!f)return;S.flt=f;save();ui();render()};
 $('#go').onclick=scan;
 function ui(){$('#ref').value=S.ref;$('#srt').value=S.srt;$('#q').value=S.q;$('#flt').innerHTML=FLT.map(f=>`<button class="chip" data-f="${f[0]}" aria-pressed="${S.flt==f[0]}">${f[1]}</button>`).join('')}
