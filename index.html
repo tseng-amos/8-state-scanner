@@ -50,7 +50,7 @@ footer{color:var(--mu);font-size:12px;margin:14px 0;line-height:1.7}
 <div id="list"><div class="empty">載入中…</div></div>
 <footer>每格：標記｜態別（順勢＝價格趨勢與 CVD 同向，背離＝相反）｜週期、MFI 區與數值；<b>強</b>＝近 6 根內的強事件（|OI 變化|×成交量 ≥ P95 且通過 CVD 死區）。標記形狀：●建倉順勢、○建倉背離、◆平倉順勢、◇平倉背離；左色條＝CVD 方向（綠買方主導、紅賣方主導）。<br>
 定義：態別側＝近 20 根回歸斜率；位階＝收盤在近 1000 根高低區間的位置（≥80% 高位、≤20% 低位）；MFI 僅作 K 棒顏色與分區；CVD＝2×主動買量−成交量（WMA 平滑）。僅用已收線 K 棒；OI 時間戳是收盤戳或開盤戳，依與成交量的相關性自動判定；最新一根 OI 未出時顯示落後根數，完全沒有 OI 時標示「無OI資料」。幣安 OI 歷史只回溯 30 天，4h 的 OI 百分位樣本因此較少。<br>
-離線回測（BTC/ETH/SOL/BNB，15M/1H/4H，2022–2026）：態別對後續方向沒有穩定預測力；僅「順勢建倉」後波動規模約 +6%、「背離平倉」約 −7%。本站為描述性資金流儀表，不構成買賣建議。</footer>
+事件時間為該根 K 棒的開盤時間（本地時區），與圖上時間軸一致。<br>離線回測（BTC/ETH/SOL/BNB，15M/1H/4H，2022–2026）：態別對後續方向沒有穩定預測力；僅「順勢建倉」後波動規模約 +6%、「背離平倉」約 −7%。本站為描述性資金流儀表，不構成買賣建議。</footer>
 </div>
 <script>
 const B='https://fapi.binance.com',$=s=>document.querySelector(s);
@@ -106,7 +106,7 @@ function analyze(kl,oiMap,ti){
   A.push({s,strong,fire});
  }
  let L=n-1;while(L>0&&isNaN(oc[L]))L--;if(n-1-L>50)L=n-1; // OI對齊失敗時不回退太遠
- let lf=null;for(let i=L;i>=Math.max(0,L-60);i--)if(A[i].fire){lf={s:A[i].s,ago:L-i};break}
+ let lf=null;for(let i=L;i>=Math.max(0,L-60);i--)if(A[i].fire){lf={s:A[i].s,ago:L-i,tm:ct[i]*6e4-sec*1e3};break}
  const lag=n-1-L,start=Math.max(0,n-300),cd2=[];
  for(let i=start;i<n;i++)cd2.push({o:o[i],h:h[i],l:l[i],c:c[i],col:mc(m[i],oe),ev:A[i].fire?A[i].s:0,tm:ct[i]*6e4-sec*1e3,m:m[i]});
  return{tf:TFS[ti][0],noOI:!oc.slice(-60).some(x=>!isNaN(x)),s:A[L].s,strong:A[L].strong,zone:zone[L],mfi:m[L],up:sl[L]>=0,tier:tier[L],oc:oc[L],cvd:cvd[L],lf,lag,cd:cd2,
@@ -148,12 +148,12 @@ const evMin=r=>Math.min(...r.t.map((a,i)=>hasEv(a)?a.lf.ago*TFS[i][1]/60:1/0));
 function cell(a){
  if(!a)return'<div class="c"><em>·</em><span>載入中</span></div>';
  const s=a.s,m=s?ST[s]:null;
- return`<div class="c ${s?(m[2]>0?'b1':'b-1'):''}${hasEv(a)?' st':''}"><em style="color:${s?COL[s]:'var(--mu)'}">${m?m[0]:'·'}</em><span>${s?'態'+s+' '+m[1].slice(2):a.noOI?'無OI資料':'OI持平'}</span><u>${a.tf} · ${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(0)}${hasEv(a)?` <small>強 ${a.lf.ago}根前</small>`:''}${a.lag?` <small>OI落後${a.lag}</small>`:''}</u></div>`}
+ return`<div class="c ${s?(m[2]>0?'b1':'b-1'):''}${hasEv(a)?' st':''}"><em style="color:${s?COL[s]:'var(--mu)'}">${m?m[0]:'·'}</em><span>${s?'態'+s+' '+m[1].slice(2):a.noOI?'無OI資料':'OI持平'}</span><u>${a.tf} · ${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(0)}${hasEv(a)?` <small title="${ft(a.lf.tm)}">強 ${a.lf.ago}根前</small>`:''}${a.lag?` <small>OI落後${a.lag}</small>`:''}</u></div>`}
 function det(r){
  const tr=r.t.map(a=>{if(!a)return'';const s=a.s;
-  return`<tr><td>${a.tf}</td><td>${s?`<span style="color:${COL[s]}">${ST[s][0]}</span> 態${s} ${ST[s][1]}`:a.noOI?'無OI資料':'OI持平'}</td><td>${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(1)}</td><td>${a.up?'上行':'下行'}｜${a.tier>=0?TN[a.tier]:'—'}</td><td>${isNaN(a.oc)?'—':a.oc.toFixed(1)+'bp'}</td><td>${isNaN(a.cvd)?'—':(a.cvd*100).toFixed(1)+'%'}</td><td>${s&&a.tier>=0?INT[(s-1)*3+a.tier]:'—'}</td><td>${a.lf?`態${a.lf.s}・${a.lf.ago}根前`:'—'}</td></tr>`}).join('');
+  return`<tr><td>${a.tf}</td><td>${s?`<span style="color:${COL[s]}">${ST[s][0]}</span> 態${s} ${ST[s][1]}`:a.noOI?'無OI資料':'OI持平'}</td><td>${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(1)}</td><td>${a.up?'上行':'下行'}｜${a.tier>=0?TN[a.tier]:'—'}</td><td>${isNaN(a.oc)?'—':a.oc.toFixed(1)+'bp'}</td><td>${isNaN(a.cvd)?'—':(a.cvd*100).toFixed(1)+'%'}</td><td>${s&&a.tier>=0?INT[(s-1)*3+a.tier]:'—'}</td><td>${a.lf?`態${a.lf.s}・${a.lf.ago}根前 <span style="color:var(--mu)">${ft(a.lf.tm)}</span>`:'—'}</td></tr>`}).join('');
  const i=ctf.get(r.sym)??1;
- return`<div class="dw"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>MFI</th><th>價格趨勢｜位階</th><th>ΔOI</th><th>CVD 比</th><th>意圖</th><th>最近強事件</th></tr></thead><tbody>${tr}</tbody></table></div><div class="chips" style="margin-top:8px">${TFS.map((t,k)=>`<button class="chip cf" data-i="${k}" aria-pressed="${k==i}">${t[0]}</button>`).join('')}<button class="chip crst" title="重置縮放與平移">⤺重置</button></div><div class="cw"><canvas class="cv" id="cv_${r.sym}"></canvas><div class="ctip"></div></div><div class="hint" id="ch_${r.sym}"></div>`}
+ return`<div class="dw"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>MFI</th><th>價格趨勢｜位階</th><th>ΔOI</th><th>CVD 比</th><th>意圖</th><th title="時間為該根K棒開盤時間（本地時區），與圖上時間軸一致">最近強事件</th></tr></thead><tbody>${tr}</tbody></table></div><div class="chips" style="margin-top:8px">${TFS.map((t,k)=>`<button class="chip cf" data-i="${k}" aria-pressed="${k==i}">${t[0]}</button>`).join('')}<button class="chip crst" title="重置縮放與平移">⤺重置</button></div><div class="cw"><canvas class="cv" id="cv_${r.sym}"></canvas><div class="ctip"></div></div><div class="hint" id="ch_${r.sym}"></div>`}
 // ---- K線圖：平移／縮放／十字準星 ----
 const views=new Map(),pad2=n=>String(n).padStart(2,'0'),ft=t=>{const d=new Date(t);return`${pad2(d.getMonth()+1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`};
 let gesture=false,pendRender=false;
