@@ -54,7 +54,7 @@ footer{color:var(--mu);font-size:12px;margin:14px 0;line-height:1.7}
 <div id="list"><div class="empty">載入中…</div></div>
 <footer>每格：標記｜態別（順勢＝價格趨勢與 CVD 同向，背離＝相反）｜週期、MFI 區與數值｜<b>盤面判讀</b>；<b>強</b>＝近 6 根內的強事件（|OI 變化|×成交量 ≥ P95 且通過 CVD 死區）。標記形狀：●建倉順勢、○建倉背離、◆平倉順勢、◇平倉背離；左色條＝CVD 方向（綠買方主導、紅賣方主導）。事件時間為該根 K 棒的開盤時間（本地時區），與圖上時間軸一致。<br>
 盤面判讀（對齊 v14 的 f_marketActionText）：取最近 N 根（5m 24／15m 20／1h 18／4h 15）每根的態別分數（態1 +2、態3 +1、態6 +1、態8 +0.5；態5 −2、態7 −1、態2 −1、態4 −0.5；OI 持平記 0）求平均，並看 MFI 均值、量能≥P70 的比率、ATR≥P30 的比率。多頭推進＝分數≥0.8、MFI 均值≥55、量能比率≥40%、波動比率≥50%；偏多蓄勢＝分數≥0.35、MFI 均值≥50、波動比率≥50%；空頭主導、偏空壓力為對稱條件（MFI 均值≤45／≤50）；其餘為多空拉鋸。列首的綜合分數＝各週期分數均值按週期加權（5m 1／15m 2／1h 3／4h 4）換算成 ±100；多、空＝盤面判讀偏多、偏空的週期數。<br>
-定義：態別側＝近 20 根回歸斜率；位階＝收盤在近 1000 根高低區間的位置（≥80% 高位、≤20% 低位）；MFI 僅作 K 棒顏色與分區；CVD＝2×主動買量−成交量（WMA 平滑）。僅用已收線 K 棒；OI 時間戳是收盤戳或開盤戳，依與成交量的相關性自動判定；最新一根 OI 未出時顯示落後根數，完全沒有 OI 時標示「無OI資料」。幣安 OI 歷史只回溯 30 天、每次最多 500 筆（5m 約 41 小時），OI 百分位樣本因此較少。。本站為描述性資金流儀表，不構成買賣建議。</footer>
+定義：態別側＝近 20 根回歸斜率；價位＝收盤在近 1000 根高低區間的位置（≥80% 高位、≤20% 低位），用於意圖文字；意圖加註「未確認」＝態別未連續達確認根數（5m／15m 3 根、1h／4h 2 根）或 ATR&lt;P30，「逆盤面」＝單根態別方向與該週期盤面相反；MFI 僅作 K 棒顏色與分區；CVD＝2×主動買量−成交量（WMA 平滑）。僅用已收線 K 棒；OI 時間戳是收盤戳或開盤戳，依與成交量的相關性自動判定；最新一根 OI 未出時顯示落後根數，完全沒有 OI 時標示「無OI資料」。幣安 OI 歷史只回溯 30 天、每次最多 500 筆（5m 約 41 小時），OI 百分位樣本因此較少。本站為描述性資金流儀表，不構成買賣建議。</footer>
 </div>
 <script>
 const B='https://fapi.binance.com',$=s=>document.querySelector(s);
@@ -68,8 +68,11 @@ const LB=1000,TREND=20,PF=33,PS=95,HI=.8,LO=.2,GAP=4,TOP_N=50,MINN=100,RECENT=6;
 const ST=[0,['●','順勢多方建倉',1],['○','背離空方建倉',-1],['◆','順勢空方回補',1],['◇','背離多方出清',-1],['●','順勢空方建倉',-1],['○','背離多方建倉',1],['◆','順勢多方出清',-1],['◇','背離空方回補',1]];
 const COL=[0,'#00e676','#ff1744','#26c6da','#ff9800','#ff1744','#00e676','#ff9800','#26c6da'],BM=[0,6,5,8,7];
 const CLS=[0,0,2,1,3,0,2,1,3],CN=['順勢建倉','順勢平倉','背離建倉','背離平倉'],ZN=['極弱','強空','偏空','偏多','強多','極強'],TN=['高位','中位','低位'];
-// 意圖對照表：索引＝(態號-1)×3＋位階(0高 1中 2低)；只描述資金行為
-const INT=["高位追多推進","中位多方加碼","低位吸籌（趨勢向上）","高位逆勢佈空","中位逆勢空方加碼","低位逆勢空方加碼","高位軋空推升（無新資金）","中位空單回補推升","低位空單回補推升（無新資金）","高位多單離場","中位多單離場","低位多單離場（趨勢向上）","高位空方順勢加碼","中位空方加碼","低位空頭順勢加碼","高位逆勢多方加碼","中位逆勢多方加碼","低位吸籌","高位多單停損離場","中位多單停損離場","低位多頭停損下殺","高位空單回補","中位空單回補反彈","低位空單回補反彈（無新資金）"];
+// 意圖對照表：索引＝(態號-1)×3＋價位(0高 1中 2低)；只描述資金行為
+const INT=["高位追多","中位多方加碼","低位順勢吸籌","高位逆勢佈空","中位逆勢加空","低位逆勢加空","高位軋空推升","中位回補推升","低位回補推升","高位多單離場","中位多單離場","低位多單離場","高位順勢加空","中位空方加碼","低位順勢加空","高位逆勢加多","中位逆勢加多","低位吸籌","高位多單停損","中位多單停損","低位多頭停損","高位空單回補","中位回補反彈","低位回補反彈"];
+// 持續確認根數（對齊 v14 f_tfParams：5m 3／15m 3／1h 2／4h 2）；單根態別方向與盤面相反＝逆盤面
+const CONF=[3,3,2,2];
+const against=a=>!!a.s&&a.actCls!='act-neu'&&Math.sign(SCORE[a.s-1])==(a.actCls=='act-bull'?-1:1);
 let S={flt:'all',srt:'ev',ref:'60',q:'',actTf:'any',act:'all'};
 try{Object.assign(S,JSON.parse(localStorage.getItem('mf')||'{}'))}catch(e){}
 const save=()=>{try{localStorage.setItem('mf',JSON.stringify(S))}catch(e){}};
@@ -138,8 +141,11 @@ function analyze(kl,oiMap,ti){
  let L=n-1;while(L>0&&isNaN(oc[L]))L--;if(n-1-L>50)L=n-1; // OI對齊失敗時不回退太遠
  let lf=null;for(let i=L;i>=Math.max(0,L-60);i--)if(A[i].fire){lf={s:A[i].s,ago:L-i,tm:ct[i]*6e4-sec*1e3};break}
  const lag=n-1-L,start=Math.max(0,n-300),cd2=[];
+ // 意圖確認：態別連續根數達確認根數，且 ATR≥P30（與 v14 訊號層同一套門檻）
+ let dur=0;for(let i=L;i>=0&&A[i].s&&A[i].s==A[L].s;i--)dur++;
+ const okC=dur>=CONF[ti]&&at[L]>=att[L-1];
  for(let i=start;i<n;i++)cd2.push({o:o[i],h:h[i],l:l[i],c:c[i],col:mc(m[i],oe),ev:A[i].fire?A[i].s:0,tm:ct[i]*6e4-sec*1e3,m:m[i]});
- return{tf:TFS[ti][0],noOI:!oc.slice(-60).some(x=>!isNaN(x)),s:A[L].s,strong:A[L].strong,zone:zone[L],mfi:m[L],up:sl[L]>=0,tier:tier[L],oc:oc[L],cvd:cvd[L],lf,lag,cd:cd2,act:act.txt,actCls:act.cls,sm:okA?sS/cn:NaN,nA,
+ return{tf:TFS[ti][0],noOI:!oc.slice(-60).some(x=>!isNaN(x)),s:A[L].s,ok:okC,strong:A[L].strong,zone:zone[L],mfi:m[L],up:sl[L]>=0,tier:tier[L],oc:oc[L],cvd:cvd[L],lf,lag,cd:cd2,act:act.txt,actCls:act.cls,sm:okA?sS/cn:NaN,nA,
   due:lag==0?(ct[n-1]*6e4+sec*1e3+6e4):Date.now()+9e4}; // 新K棒收線後再取；OI落後則90秒後重試
 }
 // ---- 取資料 ----
@@ -181,9 +187,9 @@ function cell(a){
  return`<div class="c ${s?(m[2]>0?'b1':'b-1'):''}${hasEv(a)?' st':''}"><em style="color:${s?COL[s]:'var(--mu)'}">${m?m[0]:'·'}</em><span>${s?'態'+s+' '+m[1].slice(2):a.noOI?'無OI資料':'OI持平'}</span><u>${a.tf} · ${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(0)}${hasEv(a)?` <small title="${ft(a.lf.tm)}">強 ${a.lf.ago}根前</small>`:''}${a.lag?` <small>OI落後${a.lag}</small>`:''}</u><b class="${a.actCls}">${a.act}</b></div>`}
 function det(r){
  const tr=r.t.map(a=>{if(!a)return'';const s=a.s;
-  return`<tr><td>${a.tf}</td><td>${s?`<span style="color:${COL[s]}">${ST[s][0]}</span> 態${s} ${ST[s][1]}`:a.noOI?'無OI資料':'OI持平'}</td><td>${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(1)}</td><td>${a.up?'上行':'下行'}｜${a.tier>=0?TN[a.tier]:'—'}</td><td>${isNaN(a.oc)?'—':a.oc.toFixed(1)+'bp'}</td><td>${isNaN(a.cvd)?'—':(a.cvd*100).toFixed(1)+'%'}</td><td>${s&&a.tier>=0?INT[(s-1)*3+a.tier]:'—'}</td><td><span class="${a.actCls}">${a.act}</span> <span class="mu">${isNaN(a.sm)?'':'分 '+(a.sm>=0?'+':'')+a.sm.toFixed(2)+'｜'}近${a.nA}根</span></td><td>${a.lf?`態${a.lf.s}・${a.lf.ago}根前 <span style="color:var(--mu)">${ft(a.lf.tm)}</span>`:'—'}</td></tr>`}).join('');
+  return`<tr><td>${a.tf}</td><td>${s?`<span style="color:${COL[s]}">${ST[s][0]}</span> 態${s} ${ST[s][1]}`:a.noOI?'無OI資料':'OI持平'}</td><td>${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(1)}</td><td>${a.up?'上行':'下行'}｜${a.tier>=0?TN[a.tier]:'—'}</td><td>${isNaN(a.oc)?'—':a.oc.toFixed(1)+'bp'}</td><td>${isNaN(a.cvd)?'—':(a.cvd*100).toFixed(1)+'%'}</td><td>${s&&a.tier>=0?INT[(s-1)*3+a.tier]+(a.ok?'':'｜未確認')+(against(a)?'｜逆盤面':''):'—'}</td><td><span class="${a.actCls}">${a.act}</span> <span class="mu">${isNaN(a.sm)?'':'分 '+(a.sm>=0?'+':'')+a.sm.toFixed(2)+'｜'}近${a.nA}根</span></td><td>${a.lf?`態${a.lf.s}・${a.lf.ago}根前 <span style="color:var(--mu)">${ft(a.lf.tm)}</span>`:'—'}</td></tr>`}).join('');
  const i=ctf.get(r.sym)??DTF;
- return`<div class="dw"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>MFI</th><th>價格趨勢｜位階</th><th>ΔOI</th><th>CVD 比</th><th>意圖</th><th title="最近N根的態別分數均值、MFI均值、量能與波動確認率綜合而成（對齊 v14）">盤面判讀</th><th title="時間為該根K棒開盤時間（本地時區），與圖上時間軸一致">最近強事件</th></tr></thead><tbody>${tr}</tbody></table></div><div class="chips" style="margin-top:8px">${TFS.map((t,k)=>`<button class="chip cf" data-i="${k}" aria-pressed="${k==i}">${t[0]}</button>`).join('')}<button class="chip crst" title="重置縮放與平移">⤺重置</button></div><div class="cw"><canvas class="cv" id="cv_${r.sym}"></canvas><div class="ctip"></div></div><div class="hint" id="ch_${r.sym}"></div>`}
+ return`<div class="dw"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>MFI</th><th>趨勢｜價位</th><th>ΔOI</th><th>CVD 比</th><th>意圖</th><th title="最近N根的態別分數均值、MFI均值、量能與波動確認率綜合而成（對齊 v14）">盤面判讀</th><th title="時間為該根K棒開盤時間（本地時區），與圖上時間軸一致">最近強事件</th></tr></thead><tbody>${tr}</tbody></table></div><div class="chips" style="margin-top:8px">${TFS.map((t,k)=>`<button class="chip cf" data-i="${k}" aria-pressed="${k==i}">${t[0]}</button>`).join('')}<button class="chip crst" title="重置縮放與平移">⤺重置</button></div><div class="cw"><canvas class="cv" id="cv_${r.sym}"></canvas><div class="ctip"></div></div><div class="hint" id="ch_${r.sym}"></div>`}
 // ---- K線圖：平移／縮放／十字準星 ----
 const views=new Map(),pad2=n=>String(n).padStart(2,'0'),ft=t=>{const d=new Date(t);return`${pad2(d.getMonth()+1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`};
 let gesture=false,pendRender=false;
