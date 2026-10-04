@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>資金流掃描器｜幣安永續（MFI-Flow）</title>
+<title>資金流掃描器｜幣安永續（8態×RSI）</title>
 <style>
 :root{--bg:#0e1116;--pn:#161b22;--ln:#252c36;--tx:#e6e9ee;--mu:#8b95a3;--bull:#2ebd85;--bear:#f6465d;--ac:#f0b90b;color-scheme:dark}
 @media(prefers-color-scheme:light){:root{--bg:#f4f5f7;--pn:#fff;--ln:#e1e4e8;--tx:#1a2027;--mu:#66707d;--bull:#0f9d6b;--bear:#d6293f;--ac:#b7860b;color-scheme:light}}
@@ -52,13 +52,14 @@ footer{color:var(--mu);font-size:12px;margin:14px 0;line-height:1.7}
 <div class="bar"><div class="chips" id="flt"></div></div>
 <div class="bar"><span style="color:var(--mu);font-size:12px">盤面判讀</span><select id="actTf"><option value="any">任一週期</option><option value="5m">5m</option><option value="15m">15m</option><option value="1h">1h</option><option value="4h">4h</option></select><select id="act"><option value="all">全部判讀</option><option value="多頭推進">多頭推進</option><option value="偏多蓄勢">偏多蓄勢</option><option value="多空拉鋸">多空拉鋸</option><option value="偏空壓力">偏空壓力</option><option value="空頭主導">空頭主導</option><option value="資料累積中">資料累積中</option></select></div>
 <div id="list"><div class="empty">載入中…</div></div>
-<footer>每格：標記｜態別（順勢＝價格趨勢與 CVD 同向，背離＝相反）｜週期、MFI 區與數值｜<b>盤面判讀</b>；<b>強</b>＝近 6 根內的強事件（|OI 變化|×成交量 ≥ P95 且通過 CVD 死區）。標記形狀：●建倉順勢、○建倉背離、◆平倉順勢、◇平倉背離；左色條＝CVD 方向（綠買方主導、紅賣方主導）。事件時間為該根 K 棒的開盤時間（本地時區），與圖上時間軸一致。<br>
-盤面判讀（對齊 v14 的 f_marketActionText）：取最近 N 根（5m 24／15m 20／1h 18／4h 15）每根的態別分數（態1 +2、態3 +1、態6 +1、態8 +0.5；態5 −2、態7 −1、態2 −1、態4 −0.5；OI 持平記 0）求平均，並看 MFI 均值、量能≥P70 的比率、ATR≥P30 的比率。多頭推進＝分數≥0.8、MFI 均值≥55、量能比率≥40%、波動比率≥50%；偏多蓄勢＝分數≥0.35、MFI 均值≥50、波動比率≥50%；空頭主導、偏空壓力為對稱條件（MFI 均值≤45／≤50）；其餘為多空拉鋸。列首的綜合分數＝各週期分數均值按週期加權（5m 1／15m 2／1h 3／4h 4）換算成 ±100；多、空＝盤面判讀偏多、偏空的週期數。<br>
-定義：態別側＝近 20 根回歸斜率；價位＝收盤在近 1000 根高低區間的位置（≥80% 高位、≤20% 低位），用於意圖文字；意圖加註「未確認」＝態別未連續達確認根數（5m／15m 3 根、1h／4h 2 根）或 ATR&lt;P30，「逆盤面」＝單根態別方向與該週期盤面相反；MFI 僅作 K 棒顏色與分區；CVD＝2×主動買量−成交量（WMA 平滑）。僅用已收線 K 棒；OI 時間戳是收盤戳或開盤戳，依與成交量的相關性自動判定；最新一根 OI 未出時顯示落後根數，完全沒有 OI 時標示「無OI資料」。幣安 OI 歷史只回溯 30 天、每次最多 500 筆（5m 約 41 小時），OI 百分位樣本因此較少。本站為描述性資金流儀表，不構成買賣建議。</footer>
+<footer>每格：標記｜態別（順勢＝價格趨勢與 CVD 同向，背離＝相反）｜週期、RSI 區與數值｜<b>盤面判讀</b>；<b>強</b>＝近 6 根內的強事件（|OI 變化|×成交量 ≥ P95 且通過 CVD 死區）。標記形狀：●建倉順勢、○建倉背離、◆平倉順勢、◇平倉背離；左色條＝CVD 方向（綠買方主導、紅賣方主導）。事件時間為該根 K 棒的開盤時間（本地時區），與圖上時間軸一致。<br>
+盤面判讀（對齊 v14 的 f_marketActionText）：取最近 N 根（5m 24／15m 20／1h 18／4h 15）每根的態別分數（態1 +2、態3 +1、態6 +1、態8 +0.5；態5 −2、態7 −1、態2 −1、態4 −0.5；OI 持平記 0）求平均，並看 RSI 均值、量能≥P70 的比率、ATR≥P30 的比率。多頭推進＝分數≥0.8、RSI 均值≥50 與 60 邊界的中點（5m–1h 為 55、4h 為 54.1）、量能比率≥40%、波動比率≥50%；偏多蓄勢＝分數≥0.35、RSI 均值≥50、波動比率≥50%；空頭主導、偏空壓力為對稱條件（RSI 均值≤40 與 50 邊界的中點／≤50）；其餘為多空拉鋸。列首的綜合分數＝各週期分數均值按週期加權（5m 1／15m 2／1h 3／4h 4）換算成 ±100；多、空＝盤面判讀偏多、偏空的週期數。<br>
+定義：態別側＝近 20 根回歸斜率；價位＝收盤在近 1000 根高低區間的位置（≥80% 高位、≤20% 低位），用於意圖文字；意圖加註「未確認」＝態別未連續達確認根數（5m／15m 3 根、1h／4h 2 根）或 ATR&lt;P30，「逆盤面」＝單根態別方向與該週期盤面相反；RSI（Wilder，5m 9／15m 14／1h 14／4h 21）決定 K 棒顏色、分區與盤面均值，區間邊界同 v14（5m–1h 為 20/40/50/60/80，4h 為 25.5/41.8/50/58.2/74.5，4h 為縮放先驗、尚未回測）；CVD＝2×主動買量−成交量（WMA 平滑）；現貨 CVD＝幣安現貨同週期、同算法，僅與永續比較同向／反向，不參與態別與盤面，無對應現貨的合約顯示「—」。僅用已收線 K 棒；OI 時間戳是收盤戳或開盤戳，依與成交量的相關性自動判定；最新一根 OI 未出時顯示落後根數，完全沒有 OI 時標示「無OI資料」。幣安 OI 歷史只回溯 30 天、每次最多 500 筆（5m 約 41 小時），OI 百分位樣本因此較少。本站為描述性資金流儀表，不構成買賣建議。</footer>
 </div>
 <script>
-const B='https://fapi.binance.com',$=s=>document.querySelector(s);
-const TFS=[['5m',300,7,3,17,24,6],['15m',900,9,5,20,20,9],['1h',3600,14,7,20,18,14],['4h',14400,21,10,25,15,20]]; // 標籤,秒,MFI長度,CVD平滑,MFI外側邊界,盤面取樣根數N,ATR週期
+const B='https://fapi.binance.com',BS='https://api.binance.com',$=s=>document.querySelector(s);
+const TFS=[['5m',300,9,3,24,6],['15m',900,14,5,20,9],['1h',3600,14,7,18,14],['4h',14400,21,10,15,20]]; // 標籤,秒,RSI長度,CVD平滑,盤面取樣根數N,ATR週期（對齊 v14 f_tfParams）
+const ZONES=[[20,40,50,60,80],[20,40,50,60,80],[20,40,50,60,80],[25.5,41.8,50,58.2,74.5]]; // RSI 六區邊界（對齊 v14 f_tfZones；4h 為縮放先驗，尚未回測）
 const DTF=TFS.findIndex(t=>t[0]=='1h'); // 圖表預設週期
 // 盤面判讀（對齊 v14 f_marketActionText）：態別分數多空對稱（1↔5、3↔7、6↔2、8↔4）；量能≥P70、ATR≥P30 為確認條件
 const SCORE=[2,-1,1,-.5,-2,1,-1,.5],TFW=[1,2,3,4],TFWSUM=10,ACT_STRONG=.8,ACT_WEAK=.35,ACT_VOL=.4,PV=70,PA=30;
@@ -73,6 +74,7 @@ const INT=["高位追多","中位多方加碼","低位順勢吸籌","高位逆�
 // 持續確認根數（對齊 v14 f_tfParams：5m 3／15m 3／1h 2／4h 2）；單根態別方向與盤面相反＝逆盤面
 const CONF=[3,3,2,2];
 const against=a=>!!a.s&&a.actCls!='act-neu'&&Math.sign(SCORE[a.s-1])==(a.actCls=='act-bull'?-1:1);
+const spotTxt=a=>isNaN(a.spotR)?'—':(a.spotD>0?'買方 ':a.spotD<0?'賣方 ':'中性 ')+(a.spotR*100).toFixed(1)+'%'+(isNaN(a.spotRel)?'':a.spotRel>0?'｜同永續':a.spotRel<0?'｜反永續':'');
 let S={flt:'all',srt:'ev',ref:'60',q:'',actTf:'any',act:'all'};
 try{Object.assign(S,JSON.parse(localStorage.getItem('mf')||'{}'))}catch(e){}
 const save=()=>{try{localStorage.setItem('mf',JSON.stringify(S))}catch(e){}};
@@ -81,14 +83,14 @@ let rows=new Map(),busy=false,timer=0,limited=false;const open=new Set(),ctf=new
 // ---- 指標運算 ----
 function rma(a,n){const o=Array(a.length).fill(NaN);let p=NaN;for(let i=0;i<a.length;i++){if(isNaN(p)){if(i>=n-1){let s=0,ok=true;for(let k=i-n+1;k<=i;k++){if(isNaN(a[k])){ok=false;break}s+=a[k]}if(ok){p=s/n;o[i]=p}}}else{p=(p*(n-1)+a[i])/n;o[i]=p}}return o}
 const trng=(h,l,c)=>h.map((x,i)=>i?Math.max(x-l[i],Math.abs(x-c[i-1]),Math.abs(l[i]-c[i-1])):x-l[i]);
-// 盤面判讀：MFI 均值門檻由內側邊界推得（偏多強≥55、中線50、偏空強≤45）
-function marketAction(ok,sm,mm,vr,ar){
+// 盤面判讀：RSI 均值門檻由該週期邊界推得（強多＝邊界3~4中點、中線＝邊界3、強空＝邊界2~3中點，對齊 v14）
+function marketAction(ok,sm,rm,vr,ar,z){
  if(!ok)return{txt:'資料累積中',cls:'act-neu'};
- const baseOK=ar>=.5,volOK=vr>=ACT_VOL;
- if(sm>=ACT_STRONG&&mm>=55&&volOK&&baseOK)return{txt:'多頭推進',cls:'act-bull'};
- if(sm>=ACT_WEAK&&mm>=50&&baseOK)return{txt:'偏多蓄勢',cls:'act-bull'};
- if(sm<=-ACT_STRONG&&mm<=45&&volOK&&baseOK)return{txt:'空頭主導',cls:'act-bear'};
- if(sm<=-ACT_WEAK&&mm<=50&&baseOK)return{txt:'偏空壓力',cls:'act-bear'};
+ const baseOK=ar>=.5,volOK=vr>=ACT_VOL,mid=z[2],bs=(z[2]+z[3])/2,be=(z[1]+z[2])/2;
+ if(sm>=ACT_STRONG&&rm>=bs&&volOK&&baseOK)return{txt:'多頭推進',cls:'act-bull'};
+ if(sm>=ACT_WEAK&&rm>=mid&&baseOK)return{txt:'偏多蓄勢',cls:'act-bull'};
+ if(sm<=-ACT_STRONG&&rm<=be&&volOK&&baseOK)return{txt:'空頭主導',cls:'act-bear'};
+ if(sm<=-ACT_WEAK&&rm<=mid&&baseOK)return{txt:'偏空壓力',cls:'act-bear'};
  return{txt:'多空拉鋸',cls:'act-neu'};
 }
 // 綜合分數：各週期分數均值按週期加權，換算成 ±100（理論最大值＝全週期態1/5＝2分）
@@ -97,9 +99,8 @@ const scoreLabel=v=>v>=60?'強烈偏多':v>=20?'偏多':v<=-60?'強烈偏空':v<
 const cntAct=(r,c)=>r.t.filter(a=>a&&a.actCls==c).length;
 const sumLine=r=>{const cs=compScore(r);return`<div class="sum ${cs>0?'up':cs<0?'dn':''}">${cs>0?'+':''}${cs}分 ${scoreLabel(cs)}｜多${cntAct(r,'act-bull')} 空${cntAct(r,'act-bear')}</div>`};
 const wma=(a,n)=>{const d=n*(n+1)/2;return a.map((_,i)=>{if(i<n-1)return NaN;let s=0;for(let k=0;k<n;k++)s+=a[i-n+1+k]*(k+1);return s/d})};
-function mfi(h,l,c,v,n){const tp=h.map((x,i)=>(x+l[i]+c[i])/3),up=[],dn=[];
- tp.forEach((x,i)=>{const d=i?x-tp[i-1]:0;up.push(d>0?v[i]*x:0);dn.push(d<0?v[i]*x:0)});
- return tp.map((_,i)=>{if(i<n)return NaN;let u=0,d=0;for(let k=i-n+1;k<=i;k++){u+=up[k];d+=dn[k]}return d==0?100:100-100/(1+u/d)})}
+// RSI（Wilder 平滑，與 Pine ta.rsi 相同）
+function rsi(c,n){const u=rma(c.map((x,i)=>i?Math.max(x-c[i-1],0):NaN),n),d=rma(c.map((x,i)=>i?Math.max(c[i-1]-x,0):NaN),n);return c.map((_,i)=>isNaN(u[i])?NaN:d[i]==0?100:100-100/(1+u[i]/d[i]))}
 function slope(c,n){const m=(n-1)/2,den=n*(n*n-1)/12;return c.map((_,i)=>{if(i<n-1)return NaN;let s=0;for(let k=0;k<n;k++)s+=(k-m)*c[i-n+1+k];return s/den})}
 // 滾動 nearest-rank 百分位（含當根、略過 NaN；樣本不足 minN 為 NaN）
 function pct(a,lb,p,minN=1){const out=Array(a.length).fill(NaN),w=[];
@@ -108,12 +109,11 @@ function pct(a,lb,p,minN=1){const out=Array(a.length).fill(NaN),w=[];
   if(w.length>=minN)out[i]=w[Math.max(0,Math.ceil(p/100*w.length)-1)]});return out}
 const mix=(a,b,t)=>a.map((x,i)=>Math.round(x+(b[i]-x)*t));
 function mc(m,oe){if(isNaN(m))return'#546e7a';const g=[84,110,122],x=m>=50?mix(g,[0,230,118],Math.min(1,(m-50)/(50-oe))):mix([255,23,68],g,Math.max(0,Math.min(1,(m-oe)/(50-oe))));return`rgb(${x})`}
-function analyze(kl,oiMap,ti){
- const[,sec,ml,cl,oe,nA,al]=TFS[ti];
+function analyze(kl,oiMap,ti,spotKl){
+ const[,sec,rl,cl,nA,al]=TFS[ti],Z=ZONES[ti];
  if(+kl[kl.length-1][6]>Date.now())kl=kl.slice(0,-1); // 只用已收線K棒
  const n=kl.length,col=i=>kl.map(k=>+k[i]),o=col(1),h=col(2),l=col(3),c=col(4),v=col(5),tb=col(9),ct=kl.map(k=>Math.round((+k[6]+1)/6e4));
- const m=mfi(h,l,c,v,ml),Z=[oe,40,50,60,100-oe];let zn=null;
- const zone=m.map(x=>{if(!isNaN(x)){const b=zn==null?0:1.5;let z=zn??0;while(z<5&&x>=Z[z]+b)z++;while(z>0&&x<Z[z-1]-b)z--;zn=z}return zn??-1});
+ const m=rsi(c,rl),zone=m.map(x=>isNaN(x)?-1:x<Z[0]?0:x<Z[1]?1:x<Z[2]?2:x<Z[3]?3:x<Z[4]?4:5);
  // CVD＝主動買賣量差的平滑比；強度門檻皆取前一根的百分位
  const wb=wma(tb.map((x,i)=>2*x-v[i]),cl),wv=wma(v,cl),cvd=wb.map((x,i)=>x/wv[i]),ac=cvd.map(Math.abs),cd=pct(ac,LB,PF);
  // OI時間戳慣例（戳在收盤或開盤）以|ΔOI|與成交量的相關性較高者為準，預設戳在收盤；容許±1分鐘誤差
@@ -133,24 +133,34 @@ function analyze(kl,oiMap,ti){
   if(strong){fire=s!=lastId||i-lastBar>GAP;lastId=s;lastBar=i}
   A.push({s,strong,fire});
  }
- // 盤面判讀：最近 nA 根的態別分數均值、MFI 均值、量能≥P70 比率、ATR≥P30 比率（門檻皆取前一根的百分位）
+ // 盤面判讀：最近 nA 根的態別分數均值、RSI 均值、量能≥P70 比率、ATR≥P30 比率（門檻皆取前一根的百分位）
  const vt=pct(v,LB,PV,MINN),at=rma(trng(h,l,c),al),att=pct(at,LB,PA,MINN);
  let sS=0,mS=0,vS=0,aS=0,cn=0,oiN=0;
  for(let i=n-nA;i<n;i++){if(i<1||isNaN(m[i]))continue;sS+=A[i].s?SCORE[A[i].s-1]:0;mS+=m[i];vS+=v[i]>=vt[i-1]?1:0;aS+=at[i]>=att[i-1]?1:0;oiN+=isNaN(oc[i])?0:1;cn++}
- const okA=cn>=nA&&oiN>=nA*.7&&!isNaN(vt[n-2])&&!isNaN(att[n-2]),act=marketAction(okA,sS/cn,mS/cn,vS/cn,aS/cn);
+ const okA=cn>=nA&&oiN>=nA*.7&&!isNaN(vt[n-2])&&!isNaN(att[n-2]),act=marketAction(okA,sS/cn,mS/cn,vS/cn,aS/cn,Z);
  let L=n-1;while(L>0&&isNaN(oc[L]))L--;if(n-1-L>50)L=n-1; // OI對齊失敗時不回退太遠
+ // 現貨 CVD（同週期、同算法，以開盤時間對齊永續K棒）：僅與永續方向比較，不參與態別與盤面
+ let spotR=NaN,spotD=NaN,spotRel=NaN;
+ if(spotKl&&L>0){const sv=spotKl.map(k=>+k[5]),sw=wma(spotKl.map((k,i)=>2*+k[9]-sv[i]),cl),sx=wma(sv,cl),sr=sw.map((x,i)=>x/sx[i]),sdd=pct(sr.map(Math.abs),LB,PF),j=spotKl.findIndex(k=>+k[0]==+kl[L][0]);
+  if(j>0&&!isNaN(sr[j])&&!isNaN(sdd[j-1])){spotR=sr[j];spotD=Math.abs(sr[j])>sdd[j-1]?Math.sign(sr[j]):0;const pd=ac[L]>cd[L-1]?(cvd[L]>=0?1:-1):0;spotRel=pd==0?NaN:spotD==0?0:spotD==pd?1:-1}}
  let lf=null;for(let i=L;i>=Math.max(0,L-60);i--)if(A[i].fire){lf={s:A[i].s,ago:L-i,tm:ct[i]*6e4-sec*1e3};break}
  const lag=n-1-L,start=Math.max(0,n-300),cd2=[];
  // 意圖確認：態別連續根數達確認根數，且 ATR≥P30（與 v14 訊號層同一套門檻）
  let dur=0;for(let i=L;i>=0&&A[i].s&&A[i].s==A[L].s;i--)dur++;
  const okC=dur>=CONF[ti]&&at[L]>=att[L-1];
- for(let i=start;i<n;i++)cd2.push({o:o[i],h:h[i],l:l[i],c:c[i],col:mc(m[i],oe),ev:A[i].fire?A[i].s:0,tm:ct[i]*6e4-sec*1e3,m:m[i]});
- return{tf:TFS[ti][0],noOI:!oc.slice(-60).some(x=>!isNaN(x)),s:A[L].s,ok:okC,strong:A[L].strong,zone:zone[L],mfi:m[L],up:sl[L]>=0,tier:tier[L],oc:oc[L],cvd:cvd[L],lf,lag,cd:cd2,act:act.txt,actCls:act.cls,sm:okA?sS/cn:NaN,nA,
+ for(let i=start;i<n;i++)cd2.push({o:o[i],h:h[i],l:l[i],c:c[i],col:mc(m[i],Z[0]),ev:A[i].fire?A[i].s:0,tm:ct[i]*6e4-sec*1e3,m:m[i]});
+ return{tf:TFS[ti][0],noOI:!oc.slice(-60).some(x=>!isNaN(x)),s:A[L].s,ok:okC,strong:A[L].strong,zone:zone[L],rsi:m[L],up:sl[L]>=0,tier:tier[L],oc:oc[L],cvd:cvd[L],spotR,spotD,spotRel,lf,lag,cd:cd2,act:act.txt,actCls:act.cls,sm:okA?sS/cn:NaN,nA,
   due:lag==0?(ct[n-1]*6e4+sec*1e3+6e4):Date.now()+9e4}; // 新K棒收線後再取；OI落後則90秒後重試
 }
 // ---- 取資料 ----
 async function j(u){const r=await fetch(B+u);if(!r.ok)throw new Error(r.status);return r.json()}
 async function getOI(sym,tf){try{return new Map((await j(`/futures/data/openInterestHist?symbol=${sym}&period=${tf}&limit=500`)).map(x=>[Math.round(x.timestamp/6e4),+x.sumOpenInterest]))}catch(e){return new Map()}}
+// 現貨K線（同週期）；永續代號帶 1000 前綴者改試現貨原名，找不到現貨則記住不再重試，失敗不影響主流程
+const noSpot=new Set();
+async function getSpot(sym,tf){
+ if(noSpot.has(sym))return null;const c=[...new Set([sym,sym.replace(/^1000/,'')])];let miss=0;
+ for(const s of c){try{const r=await fetch(`${BS}/api/v3/klines?symbol=${s}&interval=${tf}&limit=1000`);if(r.ok)return r.json();if(r.status==400)miss++}catch(e){}}
+ if(miss==c.length)noSpot.add(sym);return null}
 async function pool(a,n,f){let i=0;await Promise.all(Array(n).fill(0).map(async()=>{while(i<a.length)await f(a[i++])}))}
 const setSt=(t,e)=>{const s=$('#st');s.textContent=t;s.className=e?'err':''};
 // 排程：分頁在背景時暫停掃描，回到前景後 5 秒內補掃
@@ -166,7 +176,7 @@ async function scan(){
    for(let i=0;i<TFS.length;i++){
     const c=r.t[i];if(c&&Date.now()<c.due)continue;
     if(limited){fail++;bad=true;continue}
-    try{const[kl,oi]=await Promise.all([j(`/fapi/v1/klines?symbol=${r.sym}&interval=${TFS[i][0]}&limit=1500`),getOI(r.sym,TFS[i][0])]);r.t[i]=analyze(kl,oi,i)}
+    try{const[kl,oi,sp]=await Promise.all([j(`/fapi/v1/klines?symbol=${r.sym}&interval=${TFS[i][0]}&limit=1500`),getOI(r.sym,TFS[i][0]),getSpot(r.sym,TFS[i][0])]);r.t[i]=analyze(kl,oi,i,sp)}
     catch(e){fail++;bad=true;if(/418|429/.test(e.message))limited=true}
    }
    r.err=bad;r.ver=(r.ver||0)+1;done++;setSt(`掃描中 ${done}/${rows.size}`);if(done%5==0)render();
@@ -184,12 +194,12 @@ const evMin=r=>Math.min(...r.t.map((a,i)=>hasEv(a)?a.lf.ago*TFS[i][1]/60:1/0));
 function cell(a){
  if(!a)return'<div class="c"><em>·</em><span>載入中</span></div>';
  const s=a.s,m=s?ST[s]:null;
- return`<div class="c ${s?(m[2]>0?'b1':'b-1'):''}${hasEv(a)?' st':''}"><em style="color:${s?COL[s]:'var(--mu)'}">${m?m[0]:'·'}</em><span>${s?'態'+s+' '+m[1].slice(2):a.noOI?'無OI資料':'OI持平'}</span><u>${a.tf} · ${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(0)}${hasEv(a)?` <small title="${ft(a.lf.tm)}">強 ${a.lf.ago}根前</small>`:''}${a.lag?` <small>OI落後${a.lag}</small>`:''}</u><b class="${a.actCls}">${a.act}</b></div>`}
+ return`<div class="c ${s?(m[2]>0?'b1':'b-1'):''}${hasEv(a)?' st':''}"><em style="color:${s?COL[s]:'var(--mu)'}">${m?m[0]:'·'}</em><span>${s?'態'+s+' '+m[1].slice(2):a.noOI?'無OI資料':'OI持平'}</span><u>${a.tf} · ${ZN[a.zone]||'—'} ${isNaN(a.rsi)?'':a.rsi.toFixed(0)}${hasEv(a)?` <small title="${ft(a.lf.tm)}">強 ${a.lf.ago}根前</small>`:''}${a.lag?` <small>OI落後${a.lag}</small>`:''}</u><b class="${a.actCls}">${a.act}</b></div>`}
 function det(r){
  const tr=r.t.map(a=>{if(!a)return'';const s=a.s;
-  return`<tr><td>${a.tf}</td><td>${s?`<span style="color:${COL[s]}">${ST[s][0]}</span> 態${s} ${ST[s][1]}`:a.noOI?'無OI資料':'OI持平'}</td><td>${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(1)}</td><td>${a.up?'上行':'下行'}｜${a.tier>=0?TN[a.tier]:'—'}</td><td>${isNaN(a.oc)?'—':a.oc.toFixed(1)+'bp'}</td><td>${isNaN(a.cvd)?'—':(a.cvd*100).toFixed(1)+'%'}</td><td>${s&&a.tier>=0?INT[(s-1)*3+a.tier]+(a.ok?'':'｜未確認')+(against(a)?'｜逆盤面':''):'—'}</td><td><span class="${a.actCls}">${a.act}</span> <span class="mu">${isNaN(a.sm)?'':'分 '+(a.sm>=0?'+':'')+a.sm.toFixed(2)+'｜'}近${a.nA}根</span></td><td>${a.lf?`態${a.lf.s}・${a.lf.ago}根前 <span style="color:var(--mu)">${ft(a.lf.tm)}</span>`:'—'}</td></tr>`}).join('');
+  return`<tr><td>${a.tf}</td><td>${s?`<span style="color:${COL[s]}">${ST[s][0]}</span> 態${s} ${ST[s][1]}`:a.noOI?'無OI資料':'OI持平'}</td><td>${ZN[a.zone]||'—'} ${isNaN(a.rsi)?'':a.rsi.toFixed(1)}</td><td>${a.up?'上行':'下行'}｜${a.tier>=0?TN[a.tier]:'—'}</td><td>${isNaN(a.oc)?'—':a.oc.toFixed(1)+'bp'}</td><td>${isNaN(a.cvd)?'—':(a.cvd*100).toFixed(1)+'%'}</td><td>${spotTxt(a)}</td><td>${s&&a.tier>=0?INT[(s-1)*3+a.tier]+(a.ok?'':'｜未確認')+(against(a)?'｜逆盤面':''):'—'}</td><td><span class="${a.actCls}">${a.act}</span> <span class="mu">${isNaN(a.sm)?'':'分 '+(a.sm>=0?'+':'')+a.sm.toFixed(2)+'｜'}近${a.nA}根</span></td><td>${a.lf?`態${a.lf.s}・${a.lf.ago}根前 <span style="color:var(--mu)">${ft(a.lf.tm)}</span>`:'—'}</td></tr>`}).join('');
  const i=ctf.get(r.sym)??DTF;
- return`<div class="dw"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>MFI</th><th>趨勢｜價位</th><th>ΔOI</th><th>CVD 比</th><th>意圖</th><th title="最近N根的態別分數均值、MFI均值、量能與波動確認率綜合而成（對齊 v14）">盤面判讀</th><th title="時間為該根K棒開盤時間（本地時區），與圖上時間軸一致">最近強事件</th></tr></thead><tbody>${tr}</tbody></table></div><div class="chips" style="margin-top:8px">${TFS.map((t,k)=>`<button class="chip cf" data-i="${k}" aria-pressed="${k==i}">${t[0]}</button>`).join('')}<button class="chip crst" title="重置縮放與平移">⤺重置</button></div><div class="cw"><canvas class="cv" id="cv_${r.sym}"></canvas><div class="ctip"></div></div><div class="hint" id="ch_${r.sym}"></div>`}
+ return`<div class="dw"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>RSI</th><th>趨勢｜價位</th><th>ΔOI</th><th>CVD 比</th><th title="幣安現貨同週期 CVD 與永續比較；不參與態別與盤面">現貨</th><th>意圖</th><th title="最近N根的態別分數均值、RSI均值、量能與波動確認率綜合而成（對齊 v14）">盤面判讀</th><th title="時間為該根K棒開盤時間（本地時區），與圖上時間軸一致">最近強事件</th></tr></thead><tbody>${tr}</tbody></table></div><div class="chips" style="margin-top:8px">${TFS.map((t,k)=>`<button class="chip cf" data-i="${k}" aria-pressed="${k==i}">${t[0]}</button>`).join('')}<button class="chip crst" title="重置縮放與平移">⤺重置</button></div><div class="cw"><canvas class="cv" id="cv_${r.sym}"></canvas><div class="ctip"></div></div><div class="hint" id="ch_${r.sym}"></div>`}
 // ---- K線圖：平移／縮放／十字準星 ----
 const views=new Map(),pad2=n=>String(n).padStart(2,'0'),ft=t=>{const d=new Date(t);return`${pad2(d.getMonth()+1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`};
 let gesture=false,pendRender=false;
@@ -221,7 +231,7 @@ function paint(sym,hx,hy){
  if(hx==null||hx<padL||hx>padL+pw){tip.style.display='none';return}
  const i=Math.max(0,Math.min(sl.length-1,Math.floor((hx-padL)/slot))),k=sl[i],cx=padL+slot*i+slot/2;
  x.save();x.strokeStyle='rgba(139,149,163,.65)';x.setLineDash([3,3]);x.beginPath();x.moveTo(cx,padT);x.lineTo(cx,padT+ph);x.stroke();x.beginPath();x.moveTo(padL,hy);x.lineTo(padL+pw,hy);x.stroke();x.restore();
- tip.innerHTML=`${ft(k.tm)}<br>O ${fp(k.o)}　H ${fp(k.h)}<br>L ${fp(k.l)}　C ${fp(k.c)}<br>MFI ${isNaN(k.m)?'—':k.m.toFixed(1)}${k.ev?`<br><span style="color:${COL[k.ev]}">${ST[k.ev][0]} 強事件 態${k.ev} ${ST[k.ev][1]}</span>`:''}`;
+ tip.innerHTML=`${ft(k.tm)}<br>O ${fp(k.o)}　H ${fp(k.h)}<br>L ${fp(k.l)}　C ${fp(k.c)}<br>RSI ${isNaN(k.m)?'—':k.m.toFixed(1)}${k.ev?`<br><span style="color:${COL[k.ev]}">${ST[k.ev][0]} 強事件 態${k.ev} ${ST[k.ev][1]}</span>`:''}`;
  tip.style.display='block';let left=cx+8;if(left+150>W)left=cx-158;tip.style.left=Math.max(0,left)+'px';tip.style.top=Math.max(0,Math.min(H-80,hy+8))+'px';
 }
 const dz=(q,dead=6)=>Math.sign(q)*Math.max(0,Math.abs(q)-dead),clampM=m=>Math.max(.15,Math.min(6,m));
