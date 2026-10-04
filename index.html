@@ -23,39 +23,46 @@ h1{font-size:18px;margin:0}
 .c{border-radius:8px;padding:5px 8px;display:grid;grid-template-columns:auto 1fr;column-gap:7px;align-items:center;background:color-mix(in srgb,var(--mu) 10%,transparent);border-left:3px solid transparent}
 .c.b1{border-left-color:var(--bull)}.c.b-1{border-left-color:var(--bear)}
 .c.st{background:color-mix(in srgb,var(--ac) 16%,transparent)}
-.c em{font-style:normal;font-size:20px;grid-row:span 2}
+.c em{font-style:normal;font-size:20px;grid-row:span 3}
 .c span{font-size:12px;white-space:nowrap}.c u{text-decoration:none;color:var(--mu);font-size:11px}.c small{color:var(--ac)}
 .det{grid-column:1/-1;display:none;border-top:1px solid var(--ln);padding-top:6px}
 .row.open .det{display:block}
 .dw{overflow-x:auto}
-.dtb{width:100%;border-collapse:collapse;font-size:12px;min-width:680px}
+.dtb{width:100%;border-collapse:collapse;font-size:12px;min-width:860px}
 .dtb th{color:var(--mu);text-align:left;padding:4px 8px}.dtb td{padding:6px 8px;border-top:1px solid var(--ln);white-space:nowrap}
 .cw{position:relative;margin-top:8px}.cv{width:100%;height:200px;display:block;touch-action:none;cursor:crosshair}
 .ctip{position:absolute;pointer-events:none;background:var(--pn);border:1px solid var(--ln);border-radius:6px;padding:4px 7px;font-size:11px;line-height:1.5;white-space:nowrap;display:none;z-index:5}
 .hint{color:var(--mu);font-size:10px;margin-top:2px}
 .pin{background:none;border:0;color:var(--mu);cursor:pointer;font-size:15px;padding:0 4px 0 0;line-height:1}.pin[aria-pressed=true]{color:var(--ac)}
 .stale{color:var(--ac);margin-left:4px}.row:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.act-bull{color:var(--bull)}.act-bear{color:var(--bear)}.act-neu{color:var(--mu)}.mu{color:var(--mu)}
+.sym .sum{font-weight:600}.sym .sum.up{color:var(--bull)}.sym .sum.dn{color:var(--bear)}
+.c b{grid-column:2;font-size:12px;font-weight:600}
 .empty{text-align:center;color:var(--mu);padding:40px 0}
 footer{color:var(--mu);font-size:12px;margin:14px 0;line-height:1.7}
-@media(max-width:720px){.row{grid-template-columns:repeat(2,1fr)}.sym{grid-column:1/-1}.c{grid-template-columns:1fr}.c em{grid-row:auto}}
+@media(max-width:720px){.row{grid-template-columns:repeat(2,1fr)}.sym{grid-column:1/-1}.c{grid-template-columns:1fr}.c em{grid-row:auto}.c b{grid-column:auto}}
 </style></head><body><div class="w">
 <div class="top"><h1>資金流掃描器 · 幣安永續</h1><span id="st">準備中…</span></div>
 <div class="bar">
  <input id="q" type="search" placeholder="搜尋幣種，如 BTC" style="width:140px" autocomplete="off">
  <select id="ref"><option value="60">每60秒</option><option value="180">每3分鐘</option><option value="0">手動</option></select>
- <select id="srt"><option value="ev">最近強事件優先</option><option value="rk">依成交額</option></select>
+ <select id="srt"><option value="ev">最近強事件優先</option><option value="score">綜合分數優先</option><option value="rk">依成交額</option></select>
  <button class="chip" id="go">立即掃描</button>
 </div>
 <div class="bar"><div class="chips" id="flt"></div></div>
+<div class="bar"><span style="color:var(--mu);font-size:12px">盤面判讀</span><select id="actTf"><option value="any">任一週期</option><option value="5m">5m</option><option value="15m">15m</option><option value="1h">1h</option><option value="4h">4h</option></select><select id="act"><option value="all">全部判讀</option><option value="多頭推進">多頭推進</option><option value="偏多蓄勢">偏多蓄勢</option><option value="多空拉鋸">多空拉鋸</option><option value="偏空壓力">偏空壓力</option><option value="空頭主導">空頭主導</option><option value="資料累積中">資料累積中</option></select></div>
 <div id="list"><div class="empty">載入中…</div></div>
-<footer>每格：標記｜態別（順勢＝價格趨勢與 CVD 同向，背離＝相反）｜週期、MFI 區與數值；<b>強</b>＝近 6 根內的強事件（|OI 變化|×成交量 ≥ P95 且通過 CVD 死區）。標記形狀：●建倉順勢、○建倉背離、◆平倉順勢、◇平倉背離；左色條＝CVD 方向（綠買方主導、紅賣方主導）。<br>
-定義：態別側＝近 20 根回歸斜率；位階＝收盤在近 1000 根高低區間的位置（≥80% 高位、≤20% 低位）；MFI 僅作 K 棒顏色與分區；CVD＝2×主動買量−成交量（WMA 平滑）。僅用已收線 K 棒；OI 時間戳是收盤戳或開盤戳，依與成交量的相關性自動判定；最新一根 OI 未出時顯示落後根數，完全沒有 OI 時標示「無OI資料」。幣安 OI 歷史只回溯 30 天、每次最多 500 筆（5m 約 41 小時），OI 百分位樣本因此較少。<br>
-事件時間為該根 K 棒的開盤時間（本地時區），與圖上時間軸一致。<br>離線回測（BTC/ETH/SOL/BNB，15M/1H/4H，2022–2026；<b>5m 未經回測驗證</b>，僅沿用短週期參數 MFI 7、CVD 平滑 3）：態別對後續方向沒有穩定預測力；僅「順勢建倉」後波動規模約 +6%、「背離平倉」約 −7%。本站為描述性資金流儀表，不構成買賣建議。</footer>
+<footer>每格：標記｜態別（順勢＝價格趨勢與 CVD 同向，背離＝相反）｜週期、MFI 區與數值｜<b>盤面判讀</b>；<b>強</b>＝近 6 根內的強事件（|OI 變化|×成交量 ≥ P95 且通過 CVD 死區）。標記形狀：●建倉順勢、○建倉背離、◆平倉順勢、◇平倉背離；左色條＝CVD 方向（綠買方主導、紅賣方主導）。事件時間為該根 K 棒的開盤時間（本地時區），與圖上時間軸一致。<br>
+盤面判讀（對齊 v14 的 f_marketActionText）：取最近 N 根（5m 24／15m 20／1h 18／4h 15）每根的態別分數（態1 +2、態3 +1、態6 +1、態8 +0.5；態5 −2、態7 −1、態2 −1、態4 −0.5；OI 持平記 0）求平均，並看 MFI 均值、量能≥P70 的比率、ATR≥P30 的比率。多頭推進＝分數≥0.8、MFI 均值≥55、量能比率≥40%、波動比率≥50%；偏多蓄勢＝分數≥0.35、MFI 均值≥50、波動比率≥50%；空頭主導、偏空壓力為對稱條件（MFI 均值≤45／≤50）；其餘為多空拉鋸。列首的綜合分數＝各週期分數均值按週期加權（5m 1／15m 2／1h 3／4h 4）換算成 ±100；多、空＝盤面判讀偏多、偏空的週期數。<br>
+定義：態別側＝近 20 根回歸斜率；位階＝收盤在近 1000 根高低區間的位置（≥80% 高位、≤20% 低位）；MFI 僅作 K 棒顏色與分區；CVD＝2×主動買量−成交量（WMA 平滑）。僅用已收線 K 棒；OI 時間戳是收盤戳或開盤戳，依與成交量的相關性自動判定；最新一根 OI 未出時顯示落後根數，完全沒有 OI 時標示「無OI資料」。幣安 OI 歷史只回溯 30 天、每次最多 500 筆（5m 約 41 小時），OI 百分位樣本因此較少。。本站為描述性資金流儀表，不構成買賣建議。</footer>
 </div>
 <script>
 const B='https://fapi.binance.com',$=s=>document.querySelector(s);
-const TFS=[['5m',300,7,3,17],['15m',900,9,5,20],['1h',3600,14,7,20],['4h',14400,21,10,25]]; // 標籤,秒,MFI長度,CVD平滑,MFI外側邊界
+const TFS=[['5m',300,7,3,17,24,6],['15m',900,9,5,20,20,9],['1h',3600,14,7,20,18,14],['4h',14400,21,10,25,15,20]]; // 標籤,秒,MFI長度,CVD平滑,MFI外側邊界,盤面取樣根數N,ATR週期
 const DTF=TFS.findIndex(t=>t[0]=='1h'); // 圖表預設週期
+// 盤面判讀（對齊 v14 f_marketActionText）：態別分數多空對稱（1↔5、3↔7、6↔2、8↔4）；量能≥P70、ATR≥P30 為確認條件
+const SCORE=[2,-1,1,-.5,-2,1,-1,.5],TFW=[1,2,3,4],TFWSUM=10,ACT_STRONG=.8,ACT_WEAK=.35,ACT_VOL=.4,PV=70,PA=30;
+const TFIDX=Object.fromEntries(TFS.map((t,i)=>[t[0],i]));
 const LB=1000,TREND=20,PF=33,PS=95,HI=.8,LO=.2,GAP=4,TOP_N=50,MINN=100,RECENT=6;
 // 態1..8：[標記,名稱,CVD方向]；標記位置＝CVD方向（買方下、賣方上）
 const ST=[0,['●','順勢多方建倉',1],['○','背離空方建倉',-1],['◆','順勢空方回補',1],['◇','背離多方出清',-1],['●','順勢空方建倉',-1],['○','背離多方建倉',1],['◆','順勢多方出清',-1],['◇','背離空方回補',1]];
@@ -63,12 +70,29 @@ const COL=[0,'#00e676','#ff1744','#26c6da','#ff9800','#ff1744','#00e676','#ff980
 const CLS=[0,0,2,1,3,0,2,1,3],CN=['順勢建倉','順勢平倉','背離建倉','背離平倉'],ZN=['極弱','強空','偏空','偏多','強多','極強'],TN=['高位','中位','低位'];
 // 意圖對照表：索引＝(態號-1)×3＋位階(0高 1中 2低)；只描述資金行為
 const INT=["高位追多推進","中位多方加碼","低位吸籌（趨勢向上）","高位逆勢佈空","中位逆勢空方加碼","低位逆勢空方加碼","高位軋空推升（無新資金）","中位空單回補推升","低位空單回補推升（無新資金）","高位多單離場","中位多單離場","低位多單離場（趨勢向上）","高位空方順勢加碼","中位空方加碼","低位空頭順勢加碼","高位逆勢多方加碼","中位逆勢多方加碼","低位吸籌","高位多單停損離場","中位多單停損離場","低位多頭停損下殺","高位空單回補","中位空單回補反彈","低位空單回補反彈（無新資金）"];
-let S={flt:'all',srt:'ev',ref:'60',q:''};
+let S={flt:'all',srt:'ev',ref:'60',q:'',actTf:'any',act:'all'};
 try{Object.assign(S,JSON.parse(localStorage.getItem('mf')||'{}'))}catch(e){}
 const save=()=>{try{localStorage.setItem('mf',JSON.stringify(S))}catch(e){}};
 const pins=new Set(S.pins||[]);
 let rows=new Map(),busy=false,timer=0,limited=false;const open=new Set(),ctf=new Map();
 // ---- 指標運算 ----
+function rma(a,n){const o=Array(a.length).fill(NaN);let p=NaN;for(let i=0;i<a.length;i++){if(isNaN(p)){if(i>=n-1){let s=0,ok=true;for(let k=i-n+1;k<=i;k++){if(isNaN(a[k])){ok=false;break}s+=a[k]}if(ok){p=s/n;o[i]=p}}}else{p=(p*(n-1)+a[i])/n;o[i]=p}}return o}
+const trng=(h,l,c)=>h.map((x,i)=>i?Math.max(x-l[i],Math.abs(x-c[i-1]),Math.abs(l[i]-c[i-1])):x-l[i]);
+// 盤面判讀：MFI 均值門檻由內側邊界推得（偏多強≥55、中線50、偏空強≤45）
+function marketAction(ok,sm,mm,vr,ar){
+ if(!ok)return{txt:'資料累積中',cls:'act-neu'};
+ const baseOK=ar>=.5,volOK=vr>=ACT_VOL;
+ if(sm>=ACT_STRONG&&mm>=55&&volOK&&baseOK)return{txt:'多頭推進',cls:'act-bull'};
+ if(sm>=ACT_WEAK&&mm>=50&&baseOK)return{txt:'偏多蓄勢',cls:'act-bull'};
+ if(sm<=-ACT_STRONG&&mm<=45&&volOK&&baseOK)return{txt:'空頭主導',cls:'act-bear'};
+ if(sm<=-ACT_WEAK&&mm<=50&&baseOK)return{txt:'偏空壓力',cls:'act-bear'};
+ return{txt:'多空拉鋸',cls:'act-neu'};
+}
+// 綜合分數：各週期分數均值按週期加權，換算成 ±100（理論最大值＝全週期態1/5＝2分）
+const compScore=r=>{let sum=0;r.t.forEach((a,i)=>{if(a&&!isNaN(a.sm))sum+=a.sm*TFW[i]});return Math.max(-100,Math.min(100,Math.round(sum/(2*TFWSUM)*100)))};
+const scoreLabel=v=>v>=60?'強烈偏多':v>=20?'偏多':v<=-60?'強烈偏空':v<=-20?'偏空':'中性';
+const cntAct=(r,c)=>r.t.filter(a=>a&&a.actCls==c).length;
+const sumLine=r=>{const cs=compScore(r);return`<div class="sum ${cs>0?'up':cs<0?'dn':''}">${cs>0?'+':''}${cs}分 ${scoreLabel(cs)}｜多${cntAct(r,'act-bull')} 空${cntAct(r,'act-bear')}</div>`};
 const wma=(a,n)=>{const d=n*(n+1)/2;return a.map((_,i)=>{if(i<n-1)return NaN;let s=0;for(let k=0;k<n;k++)s+=a[i-n+1+k]*(k+1);return s/d})};
 function mfi(h,l,c,v,n){const tp=h.map((x,i)=>(x+l[i]+c[i])/3),up=[],dn=[];
  tp.forEach((x,i)=>{const d=i?x-tp[i-1]:0;up.push(d>0?v[i]*x:0);dn.push(d<0?v[i]*x:0)});
@@ -82,7 +106,7 @@ function pct(a,lb,p,minN=1){const out=Array(a.length).fill(NaN),w=[];
 const mix=(a,b,t)=>a.map((x,i)=>Math.round(x+(b[i]-x)*t));
 function mc(m,oe){if(isNaN(m))return'#546e7a';const g=[84,110,122],x=m>=50?mix(g,[0,230,118],Math.min(1,(m-50)/(50-oe))):mix([255,23,68],g,Math.max(0,Math.min(1,(m-oe)/(50-oe))));return`rgb(${x})`}
 function analyze(kl,oiMap,ti){
- const[,sec,ml,cl,oe]=TFS[ti];
+ const[,sec,ml,cl,oe,nA,al]=TFS[ti];
  if(+kl[kl.length-1][6]>Date.now())kl=kl.slice(0,-1); // 只用已收線K棒
  const n=kl.length,col=i=>kl.map(k=>+k[i]),o=col(1),h=col(2),l=col(3),c=col(4),v=col(5),tb=col(9),ct=kl.map(k=>Math.round((+k[6]+1)/6e4));
  const m=mfi(h,l,c,v,ml),Z=[oe,40,50,60,100-oe];let zn=null;
@@ -106,11 +130,16 @@ function analyze(kl,oiMap,ti){
   if(strong){fire=s!=lastId||i-lastBar>GAP;lastId=s;lastBar=i}
   A.push({s,strong,fire});
  }
+ // 盤面判讀：最近 nA 根的態別分數均值、MFI 均值、量能≥P70 比率、ATR≥P30 比率（門檻皆取前一根的百分位）
+ const vt=pct(v,LB,PV,MINN),at=rma(trng(h,l,c),al),att=pct(at,LB,PA,MINN);
+ let sS=0,mS=0,vS=0,aS=0,cn=0,oiN=0;
+ for(let i=n-nA;i<n;i++){if(i<1||isNaN(m[i]))continue;sS+=A[i].s?SCORE[A[i].s-1]:0;mS+=m[i];vS+=v[i]>=vt[i-1]?1:0;aS+=at[i]>=att[i-1]?1:0;oiN+=isNaN(oc[i])?0:1;cn++}
+ const okA=cn>=nA&&oiN>=nA*.7&&!isNaN(vt[n-2])&&!isNaN(att[n-2]),act=marketAction(okA,sS/cn,mS/cn,vS/cn,aS/cn);
  let L=n-1;while(L>0&&isNaN(oc[L]))L--;if(n-1-L>50)L=n-1; // OI對齊失敗時不回退太遠
  let lf=null;for(let i=L;i>=Math.max(0,L-60);i--)if(A[i].fire){lf={s:A[i].s,ago:L-i,tm:ct[i]*6e4-sec*1e3};break}
  const lag=n-1-L,start=Math.max(0,n-300),cd2=[];
  for(let i=start;i<n;i++)cd2.push({o:o[i],h:h[i],l:l[i],c:c[i],col:mc(m[i],oe),ev:A[i].fire?A[i].s:0,tm:ct[i]*6e4-sec*1e3,m:m[i]});
- return{tf:TFS[ti][0],noOI:!oc.slice(-60).some(x=>!isNaN(x)),s:A[L].s,strong:A[L].strong,zone:zone[L],mfi:m[L],up:sl[L]>=0,tier:tier[L],oc:oc[L],cvd:cvd[L],lf,lag,cd:cd2,
+ return{tf:TFS[ti][0],noOI:!oc.slice(-60).some(x=>!isNaN(x)),s:A[L].s,strong:A[L].strong,zone:zone[L],mfi:m[L],up:sl[L]>=0,tier:tier[L],oc:oc[L],cvd:cvd[L],lf,lag,cd:cd2,act:act.txt,actCls:act.cls,sm:okA?sS/cn:NaN,nA,
   due:lag==0?(ct[n-1]*6e4+sec*1e3+6e4):Date.now()+9e4}; // 新K棒收線後再取；OI落後則90秒後重試
 }
 // ---- 取資料 ----
@@ -149,12 +178,12 @@ const evMin=r=>Math.min(...r.t.map((a,i)=>hasEv(a)?a.lf.ago*TFS[i][1]/60:1/0));
 function cell(a){
  if(!a)return'<div class="c"><em>·</em><span>載入中</span></div>';
  const s=a.s,m=s?ST[s]:null;
- return`<div class="c ${s?(m[2]>0?'b1':'b-1'):''}${hasEv(a)?' st':''}"><em style="color:${s?COL[s]:'var(--mu)'}">${m?m[0]:'·'}</em><span>${s?'態'+s+' '+m[1].slice(2):a.noOI?'無OI資料':'OI持平'}</span><u>${a.tf} · ${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(0)}${hasEv(a)?` <small title="${ft(a.lf.tm)}">強 ${a.lf.ago}根前</small>`:''}${a.lag?` <small>OI落後${a.lag}</small>`:''}</u></div>`}
+ return`<div class="c ${s?(m[2]>0?'b1':'b-1'):''}${hasEv(a)?' st':''}"><em style="color:${s?COL[s]:'var(--mu)'}">${m?m[0]:'·'}</em><span>${s?'態'+s+' '+m[1].slice(2):a.noOI?'無OI資料':'OI持平'}</span><u>${a.tf} · ${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(0)}${hasEv(a)?` <small title="${ft(a.lf.tm)}">強 ${a.lf.ago}根前</small>`:''}${a.lag?` <small>OI落後${a.lag}</small>`:''}</u><b class="${a.actCls}">${a.act}</b></div>`}
 function det(r){
  const tr=r.t.map(a=>{if(!a)return'';const s=a.s;
-  return`<tr><td>${a.tf}</td><td>${s?`<span style="color:${COL[s]}">${ST[s][0]}</span> 態${s} ${ST[s][1]}`:a.noOI?'無OI資料':'OI持平'}</td><td>${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(1)}</td><td>${a.up?'上行':'下行'}｜${a.tier>=0?TN[a.tier]:'—'}</td><td>${isNaN(a.oc)?'—':a.oc.toFixed(1)+'bp'}</td><td>${isNaN(a.cvd)?'—':(a.cvd*100).toFixed(1)+'%'}</td><td>${s&&a.tier>=0?INT[(s-1)*3+a.tier]:'—'}</td><td>${a.lf?`態${a.lf.s}・${a.lf.ago}根前 <span style="color:var(--mu)">${ft(a.lf.tm)}</span>`:'—'}</td></tr>`}).join('');
+  return`<tr><td>${a.tf}</td><td>${s?`<span style="color:${COL[s]}">${ST[s][0]}</span> 態${s} ${ST[s][1]}`:a.noOI?'無OI資料':'OI持平'}</td><td>${ZN[a.zone]||'—'} ${isNaN(a.mfi)?'':a.mfi.toFixed(1)}</td><td>${a.up?'上行':'下行'}｜${a.tier>=0?TN[a.tier]:'—'}</td><td>${isNaN(a.oc)?'—':a.oc.toFixed(1)+'bp'}</td><td>${isNaN(a.cvd)?'—':(a.cvd*100).toFixed(1)+'%'}</td><td>${s&&a.tier>=0?INT[(s-1)*3+a.tier]:'—'}</td><td><span class="${a.actCls}">${a.act}</span> <span class="mu">${isNaN(a.sm)?'':'分 '+(a.sm>=0?'+':'')+a.sm.toFixed(2)+'｜'}近${a.nA}根</span></td><td>${a.lf?`態${a.lf.s}・${a.lf.ago}根前 <span style="color:var(--mu)">${ft(a.lf.tm)}</span>`:'—'}</td></tr>`}).join('');
  const i=ctf.get(r.sym)??DTF;
- return`<div class="dw"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>MFI</th><th>價格趨勢｜位階</th><th>ΔOI</th><th>CVD 比</th><th>意圖</th><th title="時間為該根K棒開盤時間（本地時區），與圖上時間軸一致">最近強事件</th></tr></thead><tbody>${tr}</tbody></table></div><div class="chips" style="margin-top:8px">${TFS.map((t,k)=>`<button class="chip cf" data-i="${k}" aria-pressed="${k==i}">${t[0]}</button>`).join('')}<button class="chip crst" title="重置縮放與平移">⤺重置</button></div><div class="cw"><canvas class="cv" id="cv_${r.sym}"></canvas><div class="ctip"></div></div><div class="hint" id="ch_${r.sym}"></div>`}
+ return`<div class="dw"><table class="dtb"><thead><tr><th>週期</th><th>態別</th><th>MFI</th><th>價格趨勢｜位階</th><th>ΔOI</th><th>CVD 比</th><th>意圖</th><th title="最近N根的態別分數均值、MFI均值、量能與波動確認率綜合而成（對齊 v14）">盤面判讀</th><th title="時間為該根K棒開盤時間（本地時區），與圖上時間軸一致">最近強事件</th></tr></thead><tbody>${tr}</tbody></table></div><div class="chips" style="margin-top:8px">${TFS.map((t,k)=>`<button class="chip cf" data-i="${k}" aria-pressed="${k==i}">${t[0]}</button>`).join('')}<button class="chip crst" title="重置縮放與平移">⤺重置</button></div><div class="cw"><canvas class="cv" id="cv_${r.sym}"></canvas><div class="ctip"></div></div><div class="hint" id="ch_${r.sym}"></div>`}
 // ---- K線圖：平移／縮放／十字準星 ----
 const views=new Map(),pad2=n=>String(n).padStart(2,'0'),ft=t=>{const d=new Date(t);return`${pad2(d.getMonth()+1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`};
 let gesture=false,pendRender=false;
@@ -231,13 +260,14 @@ function render(){
  if(gesture){pendRender=true;return} // 手勢進行中不重建DOM，結束後補繪
  const ae=document.activeElement,cl=ae&&ae.classList,fsel=cl?(cl.contains('row')?`.row[data-s="${ae.dataset.s}"]`:cl.contains('pin')?`.pin[data-pin="${ae.dataset.pin}"]`:null):null;
  let a=[...rows.values()].filter(r=>pass(r));
+ if(S.act!=='all')a=a.filter(r=>S.actTf==='any'?r.t.some(x=>x&&x.act===S.act):!!(r.t[TFIDX[S.actTf]]&&r.t[TFIDX[S.actTf]].act===S.act));
  if(S.q.trim())a=a.filter(r=>r.sym.includes(S.q.trim().toUpperCase()));
- a.sort(S.srt=='ev'?(x,y)=>evMin(x)-evMin(y)||x.rk-y.rk:(x,y)=>x.rk-y.rk);
+ a.sort(S.srt=='score'?(x,y)=>compScore(y)-compScore(x)||x.rk-y.rk:S.srt=='ev'?(x,y)=>evMin(x)-evMin(y)||x.rk-y.rk:(x,y)=>x.rk-y.rk);
  a.sort((x,y)=>(pins.has(y.sym)?1:0)-(pins.has(x.sym)?1:0)); // 釘選置頂，組內維持原排序
  $('#list').innerHTML=a.map(r=>{
   const o=open.has(r.sym),pn=pins.has(r.sym),key=`${r.ver}|${r.px}|${o}|${pn}|${ctf.get(r.sym)}|${r.err}`,c=rc.get(r.sym);
   if(c&&c.key===key)return c.html;
-  const html=`<div class="row${o?' open':''}" role="button" tabindex="0" aria-expanded="${o}" data-s="${r.sym}"><div class="sym"><button class="pin" data-pin="${r.sym}" aria-pressed="${pn}" title="釘選置頂">${pn?'★':'☆'}</button><b>${r.sym.replace('USDT','')}</b><i>#${r.rk}</i>${r.err?'<span class="stale" title="本輪更新失敗或遭限速，沿用舊資料">⚠</span>':''}<div>${fp(r.px)} <span class="${r.ch>=0?'up':'dn'}">${r.ch>=0?'+':''}${r.ch.toFixed(2)}%</span> · ${fq(r.qv)}</div></div>${TFS.map((_,k)=>cell(r.t[k])).join('')}<div class="det">${o?det(r):''}</div></div>`;
+  const html=`<div class="row${o?' open':''}" role="button" tabindex="0" aria-expanded="${o}" data-s="${r.sym}"><div class="sym"><button class="pin" data-pin="${r.sym}" aria-pressed="${pn}" title="釘選置頂">${pn?'★':'☆'}</button><b>${r.sym.replace('USDT','')}</b><i>#${r.rk}</i>${r.err?'<span class="stale" title="本輪更新失敗或遭限速，沿用舊資料">⚠</span>':''}<div>${fp(r.px)} <span class="${r.ch>=0?'up':'dn'}">${r.ch>=0?'+':''}${r.ch.toFixed(2)}%</span> · ${fq(r.qv)}</div>${sumLine(r)}</div>${TFS.map((_,k)=>cell(r.t[k])).join('')}<div class="det">${o?det(r):''}</div></div>`;
   rc.set(r.sym,{key,html});return html;
  }).join('')||'<div class="empty">沒有符合條件的合約</div>';
  open.forEach(sym=>paintOpen(sym));
@@ -259,7 +289,9 @@ $('#q').oninput=e=>{S.q=e.target.value;save();render()};
 $('#srt').onchange=e=>{S.srt=e.target.value;save();render()};
 $('#ref').onchange=e=>{S.ref=e.target.value;save();if(!busy)arm()};
 $('#flt').onclick=e=>{const f=e.target.dataset.f;if(!f)return;S.flt=f;save();ui();render()};
+$('#actTf').onchange=e=>{S.actTf=e.target.value;save();render()};
+$('#act').onchange=e=>{S.act=e.target.value;save();render()};
 $('#go').onclick=scan;
-function ui(){$('#ref').value=S.ref;$('#srt').value=S.srt;$('#q').value=S.q;$('#flt').innerHTML=FLT.map(f=>`<button class="chip" data-f="${f[0]}" aria-pressed="${S.flt==f[0]}">${f[1]}</button>`).join('')}
+function ui(){$('#ref').value=S.ref;$('#actTf').value=S.actTf;$('#act').value=S.act;$('#srt').value=S.srt;$('#q').value=S.q;$('#flt').innerHTML=FLT.map(f=>`<button class="chip" data-f="${f[0]}" aria-pressed="${S.flt==f[0]}">${f[1]}</button>`).join('')}
 ui();scan();
 </script></body></html>
