@@ -155,14 +155,29 @@ function analyze(kl,oiMap,ti,spotKl){
   due:lag==0?(ct[n-1]*6e4+sec*1e3+6e4):Date.now()+9e4}; // 新K棒收線後再取；OI落後則90秒後重試
 }
 // ---- 取資料 ----
-async function j(u){const r=await fetch(B+u);if(!r.ok)throw new Error(r.status);return r.json()}
-async function getOI(sym,tf){try{return new Map((await j(`/futures/data/openInterestHist?symbol=${sym}&period=${tf}&limit=500`)).map(x=>[Math.round(x.timestamp/6e4),+x.sumOpenInterest]))}catch(e){return new Map()}}
+// 全域併發上限 8；遇 429 依 Retry-After（預設 2^n 秒）退避重試最多 3 次，418 直接拋出
+let inflight=0;const waitQ=[];
+const slot=async()=>{if(inflight>=8)await new Promise(r=>waitQ.push(r));inflight++};
+const free=()=>{inflight--;waitQ.shift()?.()};
+async function get(u){
+ for(let n=0;;n++){
+  await slot();let r;try{r=await fetch(u)}finally{free()}
+  if(r.status==429&&n<3){await new Promise(t=>setTimeout(t,(+r.headers.get('Retry-After')||2**n)*1e3));continue}
+  return r}}
+// 現貨/OI 快取：TTL 取週期的 1/5 且不超過 5 分鐘（避免錯過新K棒）
+const cache=new Map();
+async function cached(key,ttl,f){const c=cache.get(key);if(c&&Date.now()-c.t<ttl)return c.v;const v=await f();if(v!=null)cache.set(key,{t:Date.now(),v});return v}
+const ttlOf=i=>Math.min(3e5,TFS[i][1]*200);
+async function j(u){const r=await get(B+u);if(!r.ok)throw new Error(r.status);return r.json()}
+async function getOI(sym,tf,ti){return cached('oi'+sym+tf,ttlOf(ti),async()=>{try{return new Map((await j(`/futures/data/openInterestHist?symbol=${sym}&period=${tf}&limit=500`)).map(x=>[Math.round(x.timestamp/6e4),+x.sumOpenInterest]))}catch(e){return null}}).then(v=>v||new Map())}
 // 現貨K線（同週期）；永續代號帶 1000 前綴者改試現貨原名，找不到現貨則記住不再重試，失敗不影響主流程
 const noSpot=new Set();
-async function getSpot(sym,tf){
- if(noSpot.has(sym))return null;const c=[...new Set([sym,sym.replace(/^1000/,'')])];let miss=0;
- for(const s of c){try{const r=await fetch(`${BS}/api/v3/klines?symbol=${s}&interval=${tf}&limit=1000`);if(r.ok)return r.json();if(r.status==400)miss++}catch(e){}}
- if(miss==c.length)noSpot.add(sym);return null}
+async function getSpot(sym,tf,ti){
+ if(noSpot.has(sym))return null;
+ return cached('sp'+sym+tf,ttlOf(ti),async()=>{
+  const c=[...new Set([sym,sym.replace(/^1000/,'')])];let miss=0;
+  for(const s of c){try{const r=await get(`${BS}/api/v3/klines?symbol=${s}&interval=${tf}&limit=1000`);if(r.ok)return r.json();if(r.status==400)miss++}catch(e){}}
+  if(miss==c.length)noSpot.add(sym);return null})}
 async function pool(a,n,f){let i=0;await Promise.all(Array(n).fill(0).map(async()=>{while(i<a.length)await f(a[i++])}))}
 const setSt=(t,e)=>{const s=$('#st');s.textContent=t;s.className=e?'err':''};
 // 排程：分頁在背景時暫停掃描，回到前景後 5 秒內補掃
@@ -178,7 +193,7 @@ async function scan(){
    for(let i=0;i<TFS.length;i++){
     const c=r.t[i];if(c&&Date.now()<c.due)continue;
     if(limited){fail++;bad=true;continue}
-    try{const[kl,oi,sp]=await Promise.all([j(`/fapi/v1/klines?symbol=${r.sym}&interval=${TFS[i][0]}&limit=1500`),getOI(r.sym,TFS[i][0]),getSpot(r.sym,TFS[i][0])]);r.t[i]=analyze(kl,oi,i,sp)}
+    try{const[kl,oi,sp]=await Promise.all([j(`/fapi/v1/klines?symbol=${r.sym}&interval=${TFS[i][0]}&limit=1500`),getOI(r.sym,TFS[i][0],i),getSpot(r.sym,TFS[i][0],i)]);r.t[i]=analyze(kl,oi,i,sp)}
     catch(e){fail++;bad=true;if(/418|429/.test(e.message))limited=true}
    }
    r.err=bad;r.ver=(r.ver||0)+1;done++;setSt(`掃描中 ${done}/${rows.size}`);if(done%5==0)render();
