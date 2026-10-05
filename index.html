@@ -109,7 +109,10 @@ function pct(a,lb,p,minN=1){const out=Array(a.length).fill(NaN),w=[];
  a.forEach((x,i)=>{if(!isNaN(x))w.splice(find(x),0,x);if(i>=lb&&!isNaN(a[i-lb]))w.splice(find(a[i-lb]),1);
   if(w.length>=minN)out[i]=w[Math.max(0,Math.ceil(p/100*w.length)-1)]});return out}
 const mix=(a,b,t)=>a.map((x,i)=>Math.round(x+(b[i]-x)*t));
-function mc(m,oe){if(isNaN(m))return'#546e7a';const g=[84,110,122],x=m>=50?mix(g,[0,230,118],Math.min(1,(m-50)/(50-oe))):mix([255,23,68],g,Math.max(0,Math.min(1,(m-oe)/(50-oe))));return`rgb(${x})`}
+// K棒著色（對齊指標 f_candleColor）：態別色系 × 強度（固定區與百分位動態區的平均離中線程度）× 是否爆量；無態別為灰
+const hx=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const CC=[null,['#1B5E20','#00E676','#66BB6A'],['#33400F','#C0CA33','#8D9440'],['#1B5E20','#81C784','#A5D6A7'],['#3E3E32','#9E9D24','#77775E'],['#7F0000','#FF5252','#E57373'],['#4A2C1E','#D08A5C','#9C7A63'],['#7F0000','#EF9A9A','#D7A0A0'],['#3E332E','#A68F82','#736357']].map(r=>r&&r.map(hx));
+const candleCol=(st,t,vc)=>{if(!st)return'rgb(110,110,110)';const r=CC[st];return`rgb(${mix(r[0],vc?r[1]:r[2],Math.max(0,Math.min(1,t)))})`};
 function analyze(kl,oiMap,ti,spotKl){
  const[,sec,rl,cl,nA,al]=TFS[ti],Z=ZONES[ti];
  if(+kl[kl.length-1][6]>Date.now())kl=kl.slice(0,-1); // 只用已收線K棒
@@ -150,7 +153,13 @@ function analyze(kl,oiMap,ti,spotKl){
  // 意圖確認：態別連續根數達確認根數，且 ATR≥P30（與 v14 訊號層同一套門檻）
  let dur=0;for(let i=L;i>=0&&A[i].s&&A[i].s==A[L].s;i--)dur++;
  const okC=dur>=CONF[ti]&&at[L]>=att[L-1];
- for(let i=start;i<n;i++)cd2.push({o:o[i],h:h[i],l:l[i],c:c[i],col:mc(m[i],Z[0]),ev:A[i].fire?A[i].s:0,tm:ct[i]*6e4-sec*1e3,m:m[i]});
+ // 動態區＝RSI 在前 LB 根的百分位排名（<=10/25/50/75/90 對應 0..4，其餘 5）；爆量＝量≥P70
+ const dz=i=>{if(isNaN(m[i]))return 2;let le=0,tot=0;for(let k=Math.max(0,i-LB);k<i;k++)if(!isNaN(m[k])){tot++;if(m[k]<=m[i])le++}
+  if(!tot)return 2;const pr=le/tot*100;return pr<=10?0:pr<=25?1:pr<=50?2:pr<=75?3:pr<=90?4:5};
+ // 著色用態別：同指標 f_state8（價↑/OI↑/CVD↑ 皆取方向，不設死區；OI 缺值為 0＝灰）
+ const vs=i=>{if(i<1||isNaN(oc[i]))return 0;const pu=c[i]>=c[i-1],ou=oc[i]>=0,cu=cvd[i]>=0;
+  return pu?(ou?(cu?1:2):(cu?3:4)):(ou?(cu?6:5):(cu?8:7))};
+ for(let i=start;i<n;i++)cd2.push({o:o[i],h:h[i],l:l[i],c:c[i],col:candleCol(vs(i),Math.abs((Math.max(0,zone[i])+dz(i))/2-2.5)/2.5,v[i]>=vt[i]),ev:A[i].fire?A[i].s:0,tm:ct[i]*6e4-sec*1e3,m:m[i]});
  return{tf:TFS[ti][0],noOI:!oc.slice(-60).some(x=>!isNaN(x)),s:A[L].s,ok:okC,strong:A[L].strong,zone:zone[L],rsi:m[L],up:sl[L]>=0,tier:tier[L],oc:oc[L],cvd:cvd[L],spotR,spotD,spotRel,spotRate:spRate,lf,lag,cd:cd2,act:act.txt,actCls:act.cls,sm:okA?sS/cn:NaN,nA,
   due:lag==0?(ct[n-1]*6e4+sec*1e3+6e4):Date.now()+9e4}; // 新K棒收線後再取；OI落後則90秒後重試
 }
